@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-07-06
+
+### Changed
+
+- No functional changes. Added hacs/action and hassfest validation
+  workflows required for HACS default-store submission.
+
 ## [0.1.0] - 2026-07-06
 
 ### Added
@@ -44,5 +51,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   every push and pull request.
 - README "Use cases", "Examples", and "Troubleshooting" sections.
 
-[Unreleased]: https://github.com/TrojanHorsePower/ha-healthbox3/compare/0.1.0...HEAD
+[Unreleased]: https://github.com/TrojanHorsePower/ha-healthbox3/compare/0.1.1...HEAD
+[0.1.1]: https://github.com/TrojanHorsePower/ha-healthbox3/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/TrojanHorsePower/ha-healthbox3/releases/tag/0.1.0
