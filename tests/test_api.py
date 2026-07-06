@@ -1,0 +1,322 @@
+"""Tests for the Healthbox3 API client, using real device fixture JSON."""
+
+from __future__ import annotations
+
+import asyncio
+import json
+
+import pytest
+
+from custom_components.healthbox3 import api as api_mod
+from custom_components.healthbox3.const import SENSOR_TYPE_CO2, SENSOR_TYPE_TEMPERATURE
+
+
+class _FakeResponse:
+    def __init__(self, status: int, body: str = "") -> None:
+        self.status = status
+        self._body = body
+
+    async def text(self) -> str:
+        return self._body
+
+
+class _FakeRequestCM:
+    """Mimics aiohttp's `async with session.request(...) as resp`."""
+
+    def __init__(self, outcome: _FakeResponse | BaseException) -> None:
+        self._outcome = outcome
+
+    async def __aenter__(self):
+        if isinstance(self._outcome, BaseException):
+            raise self._outcome
+        return self._outcome
+
+    async def __aexit__(self, *exc: object) -> bool:
+        return False
+
+
+class _FakeSession:
+    def __init__(self, outcomes: list[_FakeResponse | BaseException]) -> None:
+        self._outcomes = list(outcomes)
+        self.calls: list[tuple[str, str, dict]] = []
+
+    def request(self, method: str, url: str, **kwargs):
+        self.calls.append((method, url, kwargs))
+        return _FakeRequestCM(self._outcomes.pop(0))
+
+
+async def test_get_v1_data_current_parses_real_fixture(v1_data_raw):
+    session = _FakeSession([_FakeResponse(200, json.dumps(v1_data_raw))])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    data = await client.async_get_v1_data_current()
+
+    assert len(data.rooms) == 7
+    assert data.rooms[0].sensors == []  # v1 has no per-room sensors
+    assert len(data.global_sensors) == 1
+    assert data.global_sensors[0].basic_id == 0  # normalized from v1's "basic id"
+
+
+async def test_get_v2_data_current_marks_empty_co2_unavailable(v2_data_raw):
+    session = _FakeSession([_FakeResponse(200, json.dumps(v2_data_raw))])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    data = await client.async_get_v2_data_current()
+
+    room1 = next(r for r in data.rooms if r.id == 1)
+    co2 = next(s for s in room1.sensors if s.type == SENSOR_TYPE_CO2)
+    assert co2.is_available is False
+    temp = next(s for s in room1.sensors if s.type == SENSOR_TYPE_TEMPERATURE)
+    assert temp.is_available is True
+    assert room1.profile_name == "health"
+
+
+async def test_get_boost_includes_undocumented_defaults(boost_raw):
+    session = _FakeSession([_FakeResponse(200, json.dumps(boost_raw))])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    boost = await client.async_get_boost(1)
+
+    assert boost.default_level == 100.0
+    assert boost.default_timeout == 900
+
+
+async def test_set_boost_sends_expected_payload(boost_raw):
+    session = _FakeSession([_FakeResponse(200, json.dumps(boost_raw))])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    await client.async_set_boost(1, enable=True, level=175, timeout=900)
+
+    method, url, kwargs = session.calls[0]
+    assert method == "PUT"
+    assert url.endswith("/v1/api/boost/1")
+    assert kwargs["json"] == {"enable": True, "level": 175, "timeout": 900}
+
+
+async def test_activate_and_check_api_key():
+    session = _FakeSession(
+        [
+            _FakeResponse(200, ""),
+            _FakeResponse(
+                200,
+                json.dumps(
+                    {
+                        "options": {
+                            "disable_telemetry_data_allowed": True,
+                            "local_sensor_data_allowed": True,
+                        },
+                        "state": "valid",
+                    }
+                ),
+            ),
+        ]
+    )
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    await client.async_activate_api_key("some-key")
+    status = await client.async_get_api_key_status()
+
+    assert status.is_valid is True
+
+
+async def test_set_profile_rejects_unknown_profile():
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", _FakeSession([]))
+
+    with pytest.raises(ValueError):
+        await client.async_set_profile(1, "turbo")
+
+
+@pytest.mark.parametrize("status", [401, 403])
+async def test_auth_error_statuses_raise_authentication_error(status):
+    session = _FakeSession([_FakeResponse(status)])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    with pytest.raises(api_mod.Healthbox3AuthenticationError):
+        await client.async_get_v2_data_current()
+
+
+async def test_bare_500_empty_body_raises_invalid_response_error():
+    """Confirmed on real hardware: an unknown room id returns a bare 500, no body."""
+    session = _FakeSession([_FakeResponse(500, "")])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    with pytest.raises(api_mod.Healthbox3InvalidResponseError):
+        await client.async_get_boost(99)
+
+
+async def test_connection_error_wrapped():
+    session = _FakeSession([TimeoutError()])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    with pytest.raises(api_mod.Healthbox3ConnectionError):
+        await client.async_get_v1_data_current()
+
+
+async def test_malformed_json_raises_invalid_response_error():
+    session = _FakeSession([_FakeResponse(200, "{not json")])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    with pytest.raises(api_mod.Healthbox3InvalidResponseError):
+        await client.async_get_v1_data_current()
+
+
+async def test_parse_discovery_handles_undocumented_subtype_field(discovery_raw):
+    info = api_mod._parse_discovery(discovery_raw)
+
+    assert info.device == "HEALTHBOX3"
+    assert info.subtype == ""
+    assert info.local_api_version is None  # documented field, absent on real hardware
+
+
+async def test_async_discover_wires_through_udp_helper(monkeypatch, discovery_raw):
+    async def _fake_udp_discover(host, timeout):
+        assert host == "192.0.2.1"
+        return discovery_raw
+
+    monkeypatch.setattr(api_mod, "_async_udp_discover", _fake_udp_discover)
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", _FakeSession([]))
+
+    info = await client.async_discover()
+
+    assert info.serial == discovery_raw["serial"]
+
+
+class _FakeDatagramTransport:
+    """Stands in for the real UDP socket transport (the test harness hard-
+    blocks real sockets, even on localhost - pytest-homeassistant-custom-
+    component's own pytest_runtest_setup calls pytest_socket.disable_socket()
+    unconditionally on every test, ignoring the usual enable_socket marker).
+
+    Wired to the REAL _DiscoveryProtocol instance via `on_sendto`, so
+    `_async_udp_discover`'s actual future/timeout/parsing logic - and
+    _DiscoveryProtocol's actual callbacks - run for real. Only the literal
+    OS socket creation is faked.
+    """
+
+    def __init__(self, protocol: asyncio.DatagramProtocol, on_sendto) -> None:
+        self._protocol = protocol
+        self._on_sendto = on_sendto
+        self.closed = False
+
+    def sendto(self, data: bytes, addr: tuple[str, int] | None = None) -> None:
+        self._on_sendto(self._protocol, data)
+
+    def close(self) -> None:
+        self.closed = True
+
+
+async def _discover_with_fake_transport(host: str, timeout: float, on_sendto):
+    """Run the real _async_udp_discover with loop.create_datagram_endpoint
+    swapped for a fake that hands back a _FakeDatagramTransport wired to
+    the real protocol factory - everything downstream of socket creation
+    is genuine.
+    """
+    loop = asyncio.get_running_loop()
+    real_create_datagram_endpoint = loop.create_datagram_endpoint
+
+    async def _fake_create_datagram_endpoint(protocol_factory, **kwargs):
+        protocol = protocol_factory()
+        transport = _FakeDatagramTransport(protocol, on_sendto)
+        return transport, protocol
+
+    loop.create_datagram_endpoint = _fake_create_datagram_endpoint
+    try:
+        return await api_mod._async_udp_discover(host, timeout)
+    finally:
+        loop.create_datagram_endpoint = real_create_datagram_endpoint
+
+
+async def test_async_udp_discover_parses_real_response(discovery_raw):
+    """Exercises the real _async_udp_discover/_DiscoveryProtocol end to
+    end: a fake "device" replies with a real captured discovery payload as
+    soon as it "receives" the request, and the real parsing/future/
+    timeout logic handles it.
+    """
+    reply = json.dumps(discovery_raw).encode()
+
+    def _on_sendto(protocol, data):
+        assert data == api_mod.DISCOVERY_MESSAGE
+        protocol.datagram_received(reply, ("127.0.0.1", api_mod.DISCOVERY_PORT))
+
+    result = await _discover_with_fake_transport("127.0.0.1", 2, _on_sendto)
+
+    assert result == discovery_raw
+
+
+async def test_async_udp_discover_times_out_with_no_response():
+    """A device that receives the request but never replies must surface as
+    a connection error rather than hang forever.
+    """
+
+    def _on_sendto(protocol, data):
+        pass  # deliberately silent - no reply
+
+    with pytest.raises(api_mod.Healthbox3ConnectionError):
+        await _discover_with_fake_transport("127.0.0.1", 0.2, _on_sendto)
+
+
+async def test_async_udp_discover_rejects_malformed_json():
+    """A garbage (non-JSON) reply must raise cleanly, not crash."""
+
+    def _on_sendto(protocol, data):
+        protocol.datagram_received(b"not valid json", ("127.0.0.1", api_mod.DISCOVERY_PORT))
+
+    with pytest.raises(api_mod.Healthbox3InvalidResponseError):
+        await _discover_with_fake_transport("127.0.0.1", 2, _on_sendto)
+
+
+async def test_async_udp_discover_rejects_invalid_utf8():
+    """A reply that isn't even valid UTF-8 hits a different except branch
+    (UnicodeDecodeError) than malformed-but-decodable JSON.
+    """
+
+    def _on_sendto(protocol, data):
+        protocol.datagram_received(b"\xff\xfe\x00\x01", ("127.0.0.1", api_mod.DISCOVERY_PORT))
+
+    with pytest.raises(api_mod.Healthbox3InvalidResponseError):
+        await _discover_with_fake_transport("127.0.0.1", 2, _on_sendto)
+
+
+async def test_async_udp_discover_surfaces_error_received():
+    """A device/network error delivered via the transport's error_received
+    callback (e.g. a real "port unreachable" ICMP) must surface as a
+    connection error too, not just a plain timeout.
+    """
+
+    def _on_sendto(protocol, data):
+        protocol.error_received(OSError("port unreachable"))
+
+    with pytest.raises(api_mod.Healthbox3ConnectionError):
+        await _discover_with_fake_transport("127.0.0.1", 2, _on_sendto)
+
+
+async def test_discovery_protocol_datagram_received_resolves_future_once():
+    """Direct unit test of _DiscoveryProtocol: real network timing can't
+    reliably force a second datagram to arrive after the first, so this
+    exercises the "already done" guard deterministically instead.
+    """
+    future: asyncio.Future[bytes] = asyncio.get_running_loop().create_future()
+    protocol = api_mod._DiscoveryProtocol(future)
+
+    protocol.datagram_received(b"first", ("127.0.0.1", 12345))
+    assert await future == b"first"
+
+    # Must not raise (asyncio.Future.set_result on an already-done future
+    # raises InvalidStateError) - a second/duplicate reply is just ignored.
+    protocol.datagram_received(b"second", ("127.0.0.1", 12345))
+
+
+async def test_discovery_protocol_error_received_sets_future_exception():
+    """Direct unit test of _DiscoveryProtocol.error_received: real ICMP
+    "port unreachable" delivery is OS/timing-dependent and not reliable to
+    force in a test, so this calls the callback directly instead.
+    """
+    future: asyncio.Future[bytes] = asyncio.get_running_loop().create_future()
+    protocol = api_mod._DiscoveryProtocol(future)
+
+    protocol.error_received(OSError("boom"))
+    with pytest.raises(OSError, match="boom"):
+        await future
+
+    # Same already-done guard as datagram_received.
+    protocol.error_received(OSError("second, should be ignored"))

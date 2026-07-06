@@ -1,0 +1,157 @@
+rules:
+  # Bronze
+  action-setup: exempt
+    # No custom service actions are registered - boost and profile control
+    # are exposed via standard fan/select entities instead.
+  appropriate-polling: done
+    # DataUpdateCoordinator with a 30s default interval (const.DEFAULT_SCAN_INTERVAL).
+  brands: done
+    # Local brand images in custom_components/healthbox3/brand/ (icon.png,
+    # icon@2x.png, dark_icon.png, dark_icon@2x.png) - since HA 2026.3.0,
+    # custom integrations can ship these directly and take precedence over
+    # the brands repository, so a home-assistant/brands PR is no longer
+    # the path for this (confirmed against that repo's own README, which
+    # points integrations at this local mechanism instead). Deliberately a
+    # generic ventilation icon, not Renson's actual logo - see README.
+  common-modules: done
+    # const.py, api.py, coordinator.py, entity.py are shared across platforms.
+  config-flow-test-coverage: done
+    # tests/test_config_flow.py covers success (with/without key), cannot_connect,
+    # invalid_api_key, duplicate-device abort, and reauth (success + failure).
+  config-flow: done
+    # config_flow.py with translated field descriptions in strings.json.
+  dependency-transparency: done
+    # No extra PyPI requirements; only aiohttp, which ships with HA core.
+  docs-actions: exempt
+    # No custom service actions.
+  docs-triggers: exempt
+    # No custom device triggers.
+  docs-conditions: exempt
+    # No custom device conditions.
+  docs-high-level-description: done
+    # README describes the device and what the integration does.
+  docs-installation-instructions: done
+    # README covers manual/HACS install plus the API-key request prerequisite.
+  docs-removal-instructions: done
+    # README documents removal via the standard UI flow.
+  entity-event-setup: done
+    # Entities subscribe via CoordinatorEntity, which handles
+    # async_added_to_hass/async_will_remove_from_hass listener (un)registration.
+  entity-unique-id: done
+    # Every entity sets _attr_unique_id from the device serial + room/type.
+  has-entity-name: done
+    # Healthbox3Entity sets _attr_has_entity_name = True.
+  runtime-data: done
+    # entry.runtime_data holds the coordinator (see coordinator.Healthbox3ConfigEntry).
+  test-before-configure: done
+    # config_flow's user step calls /v1/api/data/current before creating the entry.
+  test-before-setup: done
+    # __init__.py raises ConfigEntryNotReady if the initial API key check
+    # or coordinator first refresh fails.
+  unique-config-entry: done
+    # unique_id is the device serial; _abort_if_unique_id_configured prevents duplicates.
+
+  # Silver
+  action-exceptions: exempt
+    # No custom service actions.
+  config-entry-unloading: done
+    # async_unload_entry unloads all platforms.
+  docs-configuration-parameters: done
+    # README documents the host and optional API key fields.
+  docs-installation-parameters: done
+    # README documents what host/API key are for and how to obtain them.
+  entity-unavailable: done
+    # Every entity's `available` property reflects real device/data state
+    # (empty-parameter sensors, missing boost/profile data, removed rooms).
+  integration-owner: done
+    # manifest.json codeowners is set.
+  log-when-unavailable: done
+    # Inherited from DataUpdateCoordinator, which logs once on failure and
+    # once on recovery rather than on every poll.
+  parallel-updates: done
+    # PARALLEL_UPDATES = 0 set in sensor.py/fan.py/select.py: entities only
+    # read from the coordinator, which itself serializes device polling.
+  reauthentication-flow: done
+    # config_flow's async_step_reauth/reauth_confirm, triggered by the
+    # coordinator via ConfigEntry.async_start_reauth on a confirmed-invalid key.
+  test-coverage: done
+    # Measured via pytest-cov: 95% line coverage (92 tests) across config
+    # flow, coordinator, entities, diagnostics, real automation-engine
+    # dispatch, and the UDP discovery implementation (exercised through a
+    # fake datagram transport wired to the real _DiscoveryProtocol, not
+    # mocked past it). Remaining gaps are defensive except-branches that
+    # are inherently hard to trigger deliberately (malformed-shape parse
+    # failures on already-200-OK responses).
+
+  # Gold
+  devices: done
+    # One DeviceInfo per Healthbox unit, keyed on serial.
+  diagnostics: done
+    # diagnostics.py dumps entry data, healthbox state, and boost params,
+    # redacting serial/warranty/valve_warranty/host/api_key/MAC/IP and any
+    # address or serial-embedded device-name fields the device may expose.
+  discovery-update-info: todo
+    # api.py already implements unicast UDP discovery (async_discover), but it
+    # isn't wired into a discovery/update flow yet - see docs known limitations.
+  discovery: todo
+    # Deliberately deferred: broadcast discovery was confirmed unreliable on
+    # the author's own network (see README known limitations); manual IP entry
+    # only for this release.
+  docs-data-update: done
+    # README explains the v1/v2 poll behavior and interval.
+  docs-examples: done
+    # README "Examples" section: humidity-triggered per-room boost,
+    # AQI-triggered boost-all, and time-based profile switching - real
+    # automations against this integration's actual entities, not filler.
+  docs-known-limitations: done
+    # README documents no-discovery and v1-only fallback behavior explicitly.
+  docs-supported-devices: done
+    # README states this targets Healthbox 3.0 only.
+  docs-supported-functions: done
+    # README lists all entities/platforms.
+  docs-troubleshooting: done
+    # README "Troubleshooting" section: connection failures, API key
+    # rejection/expiry, the empty-CO2-sensor-until-warmed-up quirk, the
+    # boost restart-not-adjust quirk, and entities disappearing on key
+    # expiry (point to the reauth prompt, not a bug report).
+  docs-use-cases: done
+    # README "Use cases" section: whole-house monitoring, targeted
+    # humidity/CO2-triggered boosting, one-press boost-all, and automated
+    # profile switching.
+  dynamic-devices: exempt
+    # Exactly one device per config entry; rooms are entities, not devices,
+    # and are not added/removed outside a full reconfigure.
+  entity-category: exempt
+    # Evaluated every entity class: sensors (temperature/humidity/CO2/VOC/
+    # AQI, global AQI), the profile select, and both boost fan entities
+    # are all primary measurements or primary interactive controls - the
+    # whole reason a user installs this integration - not integration/
+    # device settings or diagnostic meta-info, so none warrant
+    # EntityCategory.CONFIG or DIAGNOSTIC.
+  entity-device-class: done
+    # Set for temperature/humidity/CO2; deliberately omitted for VOC/AQI, which
+    # have no matching standard HA device class for this device's proprietary scales.
+  entity-disabled-by-default: todo
+  entity-translations: done
+    # strings.json/translations/en.json cover every entity's translation_key.
+  exception-translations: todo
+  icon-translations: todo
+  reconfiguration-flow: done
+    # config_flow.py's async_step_reconfigure lets the user update the IP
+    # and/or API key in place. Re-validates connectivity and, via
+    # async_set_unique_id + _abort_if_unique_id_mismatch, confirms it's
+    # still the same device by serial - not just something else answering
+    # at the new IP. A blank API key field leaves the stored key untouched
+    # (data_updates only overrides included keys).
+  repair-issues: todo
+  stale-devices: exempt
+    # Single static device per entry; nothing to detect as stale.
+
+  # Platinum
+  async-dependency: done
+    # aiohttp is natively async; no sync dependency wrapped in an executor.
+  inject-websession: done
+    # Healthbox3ApiClient takes the shared session via async_get_clientsession(hass).
+  strict-typing: todo
+    # Type hints are used throughout, but the codebase hasn't been run through
+    # mypy --strict to confirm.

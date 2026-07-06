@@ -1,0 +1,325 @@
+{
+  "device_type": "HEALTHBOX3",
+  "description": "Healthbox 3.0",
+  "serial": "REDACTED",
+  "warranty_number": "REDACTED",
+  "global": {
+    "parameter": {
+      "device name": {
+        "unit": "",
+        "value": "HEALTHBOX3[REDACTED]"
+      },
+      "legislation country": {
+        "unit": "",
+        "value": ""
+      },
+      "warranty": {
+        "unit": "",
+        "value": "REDACTED"
+      }
+    }
+  },
+  "room": [
+    {
+      "id": 1,
+      "name": "Toilet",
+      "type": "Toilet",
+      "parameter": {
+        "icon": {
+          "unit": "",
+          "value": "Toilet"
+        },
+        "subzone": {
+          "unit": "",
+          "value": ""
+        },
+        "valve": {
+          "unit": "",
+          "value": "1"
+        },
+        "valve_warranty": {
+          "unit": "",
+          "value": "REDACTED"
+        },
+        "nominal": {
+          "unit": "m³/h",
+          "value": 30.0
+        }
+      },
+      "actuator": [
+        {
+          "name": "air valve[1]_HealthBox 3[Healthbox3]",
+          "type": "air valve",
+          "basic id": 1,
+          "parameter": {
+            "flow_rate": {
+              "unit": "m³/h",
+              "value": 6.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Bathroom",
+      "type": "BathRoom",
+      "parameter": {
+        "icon": {
+          "unit": "",
+          "value": ""
+        },
+        "subzone": {
+          "unit": "",
+          "value": ""
+        },
+        "valve": {
+          "unit": "",
+          "value": "2"
+        },
+        "valve_warranty": {
+          "unit": "",
+          "value": "REDACTED"
+        },
+        "nominal": {
+          "unit": "m³/h",
+          "value": 50.0
+        }
+      },
+      "actuator": [
+        {
+          "name": "air valve[2]_HealthBox 3[Healthbox3]",
+          "type": "air valve",
+          "basic id": 2,
+          "parameter": {
+            "flow_rate": {
+              "unit": "m³/h",
+              "value": 10.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Guest Room",
+      "type": "BedRoom",
+      "parameter": {
+        "icon": {
+          "unit": "",
+          "value": "StudioFlat"
+        },
+        "subzone": {
+          "unit": "",
+          "value": ""
+        },
+        "valve": {
+          "unit": "",
+          "value": "3"
+        },
+        "valve_warranty": {
+          "unit": "",
+          "value": "REDACTED"
+        },
+        "nominal": {
+          "unit": "m³/h",
+          "value": 30.0
+        }
+      },
+      "actuator": [
+        {
+          "name": "air valve[3]_HealthBox 3[Healthbox3]",
+          "type": "air valve",
+          "basic id": 3,
+          "parameter": {
+            "flow_rate": {
+              "unit": "m³/h",
+              "value": 6.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Living Room",
+      "type": "LivingRoom",
+      "parameter": {
+        "icon": {
+          "unit": "",
+          "value": "LivingRoom"
+        },
+        "subzone": {
+          "unit": "",
+          "value": ""
+        },
+        "valve": {
+          "unit": "",
+          "value": "4"
+        },
+        "valve_warranty": {
+          "unit": "",
+          "value": "REDACTED"
+        },
+        "nominal": {
+          "unit": "m³/h",
+          "value": 30.0
+        }
+      },
+      "actuator": [
+        {
+          "name": "air valve[4]_HealthBox 3[Healthbox3]",
+          "type": "air valve",
+          "basic id": 4,
+          "parameter": {
+            "flow_rate": {
+              "unit": "m³/h",
+              "value": 12.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Bedroom",
+      "type": "BedRoom",
+      "parameter": {
+        "icon": {
+          "unit": "",
+          "value": ""
+        },
+        "subzone": {
+          "unit": "",
+          "value": ""
+        },
+        "valve": {
+          "unit": "",
+          "value": "5"
+        },
+        "valve_warranty": {
+          "unit": "",
+          "value": "REDACTED"
+        },
+        "nominal": {
+          "unit": "m³/h",
+          "value": 30.0
+        }
+      },
+      "actuator": [
+        {
+          "name": "air valve[5]_HealthBox 3[Healthbox3]",
+          "type": "air valve",
+          "basic id": 5,
+          "parameter": {
+            "flow_rate": {
+              "unit": "m³/h",
+              "value": 30.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Living Room 2",
+      "type": "LivingRoom",
+      "parameter": {
+        "icon": {
+          "unit": "",
+          "value": "LivingRoom"
+        },
+        "subzone": {
+          "unit": "",
+          "value": ""
+        },
+        "valve": {
+          "unit": "",
+          "value": "6"
+        },
+        "valve_warranty": {
+          "unit": "",
+          "value": "REDACTED"
+        },
+        "nominal": {
+          "unit": "m³/h",
+          "value": 30.0
+        }
+      },
+      "actuator": [
+        {
+          "name": "air valve[6]_HealthBox 3[Healthbox3]",
+          "type": "air valve",
+          "basic id": 6,
+          "parameter": {
+            "flow_rate": {
+              "unit": "m³/h",
+              "value": 14.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Main Bedroom",
+      "type": "BedRoom",
+      "parameter": {
+        "icon": {
+          "unit": "",
+          "value": ""
+        },
+        "subzone": {
+          "unit": "",
+          "value": ""
+        },
+        "valve": {
+          "unit": "",
+          "value": "7"
+        },
+        "valve_warranty": {
+          "unit": "",
+          "value": "REDACTED"
+        },
+        "nominal": {
+          "unit": "m³/h",
+          "value": 30.0
+        }
+      },
+      "actuator": [
+        {
+          "name": "air valve[7]_HealthBox 3[Healthbox3]",
+          "type": "air valve",
+          "basic id": 7,
+          "parameter": {
+            "flow_rate": {
+              "unit": "m³/h",
+              "value": 6.0
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "sensor": [
+    {
+      "name": "global air quality index",
+      "type": "global air quality index",
+      "basic id": 0,
+      "parameter": {
+        "index": {
+          "unit": "",
+          "value": 50.0
+        },
+        "main_pollutant": {
+          "unit": "",
+          "value": "indoor CO2"
+        },
+        "room": {
+          "unit": "",
+          "value": "Bedroom"
+        }
+      }
+    }
+  ]
+}

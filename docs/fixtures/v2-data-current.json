@@ -1,0 +1,697 @@
+{
+  "device_type": "HEALTHBOX3",
+  "description": "Healthbox 3.0",
+  "serial": "REDACTED",
+  "warranty_number": "REDACTED",
+  "global": {
+    "parameter": {
+      "device name": {
+        "unit": "",
+        "value": "HEALTHBOX3[REDACTED]"
+      },
+      "legislation country": {
+        "unit": "",
+        "value": ""
+      },
+      "warranty": {
+        "unit": "",
+        "value": "REDACTED"
+      }
+    }
+  },
+  "room": {
+    "1": {
+      "name": "Toilet",
+      "type": "Toilet",
+      "parameter": {
+        "icon": {
+          "unit": "",
+          "value": "Toilet"
+        },
+        "subzone": {
+          "unit": "",
+          "value": ""
+        },
+        "valve": {
+          "unit": "",
+          "value": "1"
+        },
+        "valve_warranty": {
+          "unit": "",
+          "value": "REDACTED"
+        },
+        "nominal": {
+          "unit": "m³/h",
+          "value": 30.0
+        }
+      },
+      "profile_name": "health",
+      "actuator": [
+        {
+          "name": "air valve[1]_HealthBox 3[Healthbox3]",
+          "type": "air valve",
+          "basic_id": 1,
+          "parameter": {
+            "flow_rate": {
+              "unit": "m³/h",
+              "value": 6.0
+            }
+          }
+        }
+      ],
+      "sensor": [
+        {
+          "basic_id": 1,
+          "name": "indoor temperature[1]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "temperature": {
+              "unit": "deg C",
+              "value": 22.0
+            }
+          },
+          "type": "indoor temperature"
+        },
+        {
+          "basic_id": 1,
+          "name": "indoor relative humidity[1]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "humidity": {
+              "unit": "pct",
+              "value": 50.0
+            }
+          },
+          "type": "indoor relative humidity"
+        },
+        {
+          "basic_id": 1,
+          "name": "indoor CO2[1]_HealthBox 3[Healthbox3]",
+          "parameter": {},
+          "type": "indoor CO2"
+        },
+        {
+          "basic_id": 1,
+          "name": "indoor air quality index[1]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "index": {
+              "unit": "",
+              "value": 10.0
+            },
+            "main_pollutant": {
+              "unit": "",
+              "value": ""
+            }
+          },
+          "type": "indoor air quality index"
+        },
+        {
+          "basic_id": 1,
+          "name": "indoor volatile organic compounds[1]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "concentration": {
+              "unit": "ppm",
+              "value": 500.0
+            },
+            "concentration_maximum": {
+              "unit": "ppm",
+              "value": 700.0
+            },
+            "raw": {
+              "unit": "ppm",
+              "value": 9000.0
+            }
+          },
+          "type": "indoor volatile organic compounds"
+        }
+      ]
+    },
+    "2": {
+      "name": "Bathroom",
+      "type": "BathRoom",
+      "parameter": {
+        "icon": {
+          "unit": "",
+          "value": ""
+        },
+        "subzone": {
+          "unit": "",
+          "value": ""
+        },
+        "valve": {
+          "unit": "",
+          "value": "2"
+        },
+        "valve_warranty": {
+          "unit": "",
+          "value": "REDACTED"
+        },
+        "nominal": {
+          "unit": "m³/h",
+          "value": 50.0
+        }
+      },
+      "profile_name": "health",
+      "actuator": [
+        {
+          "name": "air valve[2]_HealthBox 3[Healthbox3]",
+          "type": "air valve",
+          "basic_id": 2,
+          "parameter": {
+            "flow_rate": {
+              "unit": "m³/h",
+              "value": 10.0
+            }
+          }
+        }
+      ],
+      "sensor": [
+        {
+          "basic_id": 2,
+          "name": "indoor temperature[2]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "temperature": {
+              "unit": "deg C",
+              "value": 23.0
+            }
+          },
+          "type": "indoor temperature"
+        },
+        {
+          "basic_id": 2,
+          "name": "indoor relative humidity[2]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "humidity": {
+              "unit": "pct",
+              "value": 55.0
+            }
+          },
+          "type": "indoor relative humidity"
+        },
+        {
+          "basic_id": 2,
+          "name": "indoor volatile organic compounds[2]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "concentration": {
+              "unit": "ppm",
+              "value": 900.0
+            },
+            "concentration_maximum": {
+              "unit": "ppm",
+              "value": 1100.0
+            },
+            "raw": {
+              "unit": "ppm",
+              "value": 30000.0
+            }
+          },
+          "type": "indoor volatile organic compounds"
+        },
+        {
+          "basic_id": 2,
+          "name": "indoor air quality index[2]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "index": {
+              "unit": "",
+              "value": 30.0
+            },
+            "main_pollutant": {
+              "unit": "",
+              "value": ""
+            }
+          },
+          "type": "indoor air quality index"
+        }
+      ]
+    },
+    "3": {
+      "name": "Guest Room",
+      "type": "BedRoom",
+      "parameter": {
+        "icon": {
+          "unit": "",
+          "value": "StudioFlat"
+        },
+        "subzone": {
+          "unit": "",
+          "value": ""
+        },
+        "valve": {
+          "unit": "",
+          "value": "3"
+        },
+        "valve_warranty": {
+          "unit": "",
+          "value": "REDACTED"
+        },
+        "nominal": {
+          "unit": "m³/h",
+          "value": 30.0
+        }
+      },
+      "profile_name": "health",
+      "actuator": [
+        {
+          "name": "air valve[3]_HealthBox 3[Healthbox3]",
+          "type": "air valve",
+          "basic_id": 3,
+          "parameter": {
+            "flow_rate": {
+              "unit": "m³/h",
+              "value": 6.0
+            }
+          }
+        }
+      ],
+      "sensor": [
+        {
+          "basic_id": 3,
+          "name": "indoor temperature[3]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "temperature": {
+              "unit": "deg C",
+              "value": 21.0
+            }
+          },
+          "type": "indoor temperature"
+        },
+        {
+          "basic_id": 3,
+          "name": "indoor relative humidity[3]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "humidity": {
+              "unit": "pct",
+              "value": 45.0
+            }
+          },
+          "type": "indoor relative humidity"
+        },
+        {
+          "basic_id": 3,
+          "name": "indoor CO2[3]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "concentration": {
+              "unit": "ppm",
+              "value": 500.0
+            }
+          },
+          "type": "indoor CO2"
+        },
+        {
+          "basic_id": 3,
+          "name": "indoor air quality index[3]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "index": {
+              "unit": "",
+              "value": 20.0
+            },
+            "main_pollutant": {
+              "unit": "",
+              "value": ""
+            }
+          },
+          "type": "indoor air quality index"
+        }
+      ]
+    },
+    "4": {
+      "name": "Living Room",
+      "type": "LivingRoom",
+      "parameter": {
+        "icon": {
+          "unit": "",
+          "value": "LivingRoom"
+        },
+        "subzone": {
+          "unit": "",
+          "value": ""
+        },
+        "valve": {
+          "unit": "",
+          "value": "4"
+        },
+        "valve_warranty": {
+          "unit": "",
+          "value": "REDACTED"
+        },
+        "nominal": {
+          "unit": "m³/h",
+          "value": 30.0
+        }
+      },
+      "profile_name": "health",
+      "actuator": [
+        {
+          "name": "air valve[4]_HealthBox 3[Healthbox3]",
+          "type": "air valve",
+          "basic_id": 4,
+          "parameter": {
+            "flow_rate": {
+              "unit": "m³/h",
+              "value": 18.0
+            }
+          }
+        }
+      ],
+      "sensor": [
+        {
+          "basic_id": 4,
+          "name": "indoor temperature[4]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "temperature": {
+              "unit": "deg C",
+              "value": 22.0
+            }
+          },
+          "type": "indoor temperature"
+        },
+        {
+          "basic_id": 4,
+          "name": "indoor relative humidity[4]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "humidity": {
+              "unit": "pct",
+              "value": 50.0
+            }
+          },
+          "type": "indoor relative humidity"
+        },
+        {
+          "basic_id": 4,
+          "name": "indoor CO2[4]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "concentration": {
+              "unit": "ppm",
+              "value": 600.0
+            }
+          },
+          "type": "indoor CO2"
+        },
+        {
+          "basic_id": 4,
+          "name": "indoor air quality index[4]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "index": {
+              "unit": "",
+              "value": 30.0
+            },
+            "main_pollutant": {
+              "unit": "",
+              "value": ""
+            }
+          },
+          "type": "indoor air quality index"
+        }
+      ]
+    },
+    "5": {
+      "name": "Bedroom",
+      "type": "BedRoom",
+      "parameter": {
+        "icon": {
+          "unit": "",
+          "value": ""
+        },
+        "subzone": {
+          "unit": "",
+          "value": ""
+        },
+        "valve": {
+          "unit": "",
+          "value": "5"
+        },
+        "valve_warranty": {
+          "unit": "",
+          "value": "REDACTED"
+        },
+        "nominal": {
+          "unit": "m³/h",
+          "value": 30.0
+        }
+      },
+      "profile_name": "health",
+      "actuator": [
+        {
+          "name": "air valve[5]_HealthBox 3[Healthbox3]",
+          "type": "air valve",
+          "basic_id": 5,
+          "parameter": {
+            "flow_rate": {
+              "unit": "m³/h",
+              "value": 30.0
+            }
+          }
+        }
+      ],
+      "sensor": [
+        {
+          "basic_id": 5,
+          "name": "indoor temperature[5]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "temperature": {
+              "unit": "deg C",
+              "value": 20.0
+            }
+          },
+          "type": "indoor temperature"
+        },
+        {
+          "basic_id": 5,
+          "name": "indoor relative humidity[5]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "humidity": {
+              "unit": "pct",
+              "value": 40.0
+            }
+          },
+          "type": "indoor relative humidity"
+        },
+        {
+          "basic_id": 5,
+          "name": "indoor CO2[5]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "concentration": {
+              "unit": "ppm",
+              "value": 700.0
+            }
+          },
+          "type": "indoor CO2"
+        },
+        {
+          "basic_id": 5,
+          "name": "indoor air quality index[5]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "index": {
+              "unit": "",
+              "value": 45.0
+            },
+            "main_pollutant": {
+              "unit": "",
+              "value": "indoor CO2"
+            }
+          },
+          "type": "indoor air quality index"
+        }
+      ]
+    },
+    "6": {
+      "name": "Living Room 2",
+      "type": "LivingRoom",
+      "parameter": {
+        "icon": {
+          "unit": "",
+          "value": "LivingRoom"
+        },
+        "subzone": {
+          "unit": "",
+          "value": ""
+        },
+        "valve": {
+          "unit": "",
+          "value": "6"
+        },
+        "valve_warranty": {
+          "unit": "",
+          "value": "REDACTED"
+        },
+        "nominal": {
+          "unit": "m³/h",
+          "value": 30.0
+        }
+      },
+      "profile_name": "health",
+      "actuator": [
+        {
+          "name": "air valve[6]_HealthBox 3[Healthbox3]",
+          "type": "air valve",
+          "basic_id": 6,
+          "parameter": {
+            "flow_rate": {
+              "unit": "m³/h",
+              "value": 15.0
+            }
+          }
+        }
+      ],
+      "sensor": [
+        {
+          "basic_id": 6,
+          "name": "indoor temperature[6]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "temperature": {
+              "unit": "deg C",
+              "value": 22.0
+            }
+          },
+          "type": "indoor temperature"
+        },
+        {
+          "basic_id": 6,
+          "name": "indoor relative humidity[6]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "humidity": {
+              "unit": "pct",
+              "value": 50.0
+            }
+          },
+          "type": "indoor relative humidity"
+        },
+        {
+          "basic_id": 6,
+          "name": "indoor CO2[6]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "concentration": {
+              "unit": "ppm",
+              "value": 550.0
+            }
+          },
+          "type": "indoor CO2"
+        },
+        {
+          "basic_id": 6,
+          "name": "indoor air quality index[6]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "index": {
+              "unit": "",
+              "value": 25.0
+            },
+            "main_pollutant": {
+              "unit": "",
+              "value": ""
+            }
+          },
+          "type": "indoor air quality index"
+        }
+      ]
+    },
+    "7": {
+      "name": "Main Bedroom",
+      "type": "BedRoom",
+      "parameter": {
+        "icon": {
+          "unit": "",
+          "value": ""
+        },
+        "subzone": {
+          "unit": "",
+          "value": ""
+        },
+        "valve": {
+          "unit": "",
+          "value": "7"
+        },
+        "valve_warranty": {
+          "unit": "",
+          "value": "REDACTED"
+        },
+        "nominal": {
+          "unit": "m³/h",
+          "value": 30.0
+        }
+      },
+      "profile_name": "health",
+      "actuator": [
+        {
+          "name": "air valve[7]_HealthBox 3[Healthbox3]",
+          "type": "air valve",
+          "basic_id": 7,
+          "parameter": {
+            "flow_rate": {
+              "unit": "m³/h",
+              "value": 6.0
+            }
+          }
+        }
+      ],
+      "sensor": [
+        {
+          "basic_id": 7,
+          "name": "indoor temperature[7]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "temperature": {
+              "unit": "deg C",
+              "value": 21.0
+            }
+          },
+          "type": "indoor temperature"
+        },
+        {
+          "basic_id": 7,
+          "name": "indoor relative humidity[7]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "humidity": {
+              "unit": "pct",
+              "value": 47.0
+            }
+          },
+          "type": "indoor relative humidity"
+        },
+        {
+          "basic_id": 7,
+          "name": "indoor CO2[7]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "concentration": {
+              "unit": "ppm",
+              "value": 480.0
+            }
+          },
+          "type": "indoor CO2"
+        },
+        {
+          "basic_id": 7,
+          "name": "indoor air quality index[7]_HealthBox 3[Healthbox3]",
+          "parameter": {
+            "index": {
+              "unit": "",
+              "value": 20.0
+            },
+            "main_pollutant": {
+              "unit": "",
+              "value": ""
+            }
+          },
+          "type": "indoor air quality index"
+        }
+      ]
+    }
+  },
+  "sensor": [
+    {
+      "name": "global air quality index",
+      "type": "global air quality index",
+      "basic_id": 0,
+      "parameter": {
+        "index": {
+          "unit": "",
+          "value": 45.0
+        },
+        "main_pollutant": {
+          "unit": "",
+          "value": "indoor CO2"
+        },
+        "room": {
+          "unit": "",
+          "value": "Bedroom"
+        }
+      }
+    }
+  ]
+}

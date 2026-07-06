@@ -1,0 +1,48 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.1.0] - 2026-07-06
+
+### Added
+
+- Config flow with manual IP entry, v1 connectivity validation, optional
+  API key activation with verification, automatic detection of a key
+  activated directly against the device (outside this integration), and
+  a reauthentication flow.
+- Reconfigure flow (Settings → Devices & Services → Reconfigure) for
+  updating the device's IP address and/or API key in place, without
+  losing entity history from a remove-and-re-add. Re-validates
+  connectivity and confirms (by serial number) it's still the same
+  device before updating anything; a blank API key field leaves the
+  currently stored key untouched.
+- `DataUpdateCoordinator` polling `/v1/api/data/current` or
+  `/v2/api/data/current` depending on API key status, with automatic
+  graceful fallback to v1-only functionality (rather than repeated
+  errors) if a previously valid key stops working.
+- Per-room sensors for temperature, humidity, CO2, VOC, and air quality
+  index, created dynamically to match whatever sensors a given room's
+  hardware actually reports, plus a whole-house air quality index sensor.
+- Boost control as `fan` entities - one per room plus one device-level
+  "Boost all" - with percentage and preset-mode duration mapped onto the
+  device's real level/duration ranges, fully automatable via standard
+  Home Assistant fan services.
+- Ventilation profile selection per room (eco/health/intense), available
+  once an API key is active.
+- Diagnostics support, with serial numbers, warranty numbers, API keys,
+  host/IP, and other identifying fields redacted.
+- Local brand icons (a generic ventilation symbol, not Renson's actual
+  branding).
+- MIT license.
+- Automated tests (config flow, coordinator, entities, diagnostics, and
+  real Home Assistant automation-engine dispatch) and CI running them on
+  every push and pull request.
+- README "Use cases", "Examples", and "Troubleshooting" sections.
+
+[Unreleased]: https://github.com/TrojanHorsePower/ha-healthbox3/compare/0.1.0...HEAD
+[0.1.0]: https://github.com/TrojanHorsePower/ha-healthbox3/releases/tag/0.1.0

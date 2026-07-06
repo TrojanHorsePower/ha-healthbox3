@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+.vscode/
+.idea/
+*:Zone.Identifier
+*.swp
+.*.swp
+
+# Vendor documentation kept locally for reference only - copyrighted by
+# Renson, not ours to redistribute from this repo.
+docs/**/*.pdf

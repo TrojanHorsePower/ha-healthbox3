@@ -1,0 +1,12 @@
+{
+  "domain": "healthbox3",
+  "name": "Renson Healthbox 3",
+  "codeowners": ["@TrojanHorsePower"],
+  "config_flow": true,
+  "documentation": "https://github.com/TrojanHorsePower/ha-healthbox3",
+  "integration_type": "hub",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/TrojanHorsePower/ha-healthbox3/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

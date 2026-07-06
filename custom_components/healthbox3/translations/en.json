@@ -1,0 +1,81 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to your Healthbox 3",
+        "description": "Enter the IP address or hostname of your Renson Healthbox 3 on your local network.",
+        "data": {
+          "host": "Host"
+        }
+      },
+      "api_key": {
+        "title": "Optional: unlock full sensor data",
+        "description": "Without an API key, this integration only reads basic room/valve data and can control boost (v1 API). To also get temperature, humidity, CO2, VOC and air quality sensors, plus ventilation profile control, contact Renson support and request an API key for this device (serial: {serial}) - they'll ask for its serial and warranty number. Already activated a key directly against the device yourself (e.g. via the POST command in Renson's docs)? You can leave this blank - activation lives on the device itself, so this integration will detect it automatically. Otherwise, leave this blank to continue without one; you can add a key later via Reconfigure.",
+        "data": {
+          "api_key": "API key (optional)"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reauthenticate Healthbox 3",
+        "description": "The API key for this Healthbox 3 is no longer valid (Renson-issued keys expire after several years). The integration has fallen back to v1-only functionality in the meantime. Enter a new key to restore sensor and profile access.",
+        "data": {
+          "api_key": "API key"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Healthbox 3",
+        "description": "Update the device's IP address and/or API key. Leave the API key blank to keep the one already stored - it's only changed if you type a new one.",
+        "data": {
+          "host": "Host",
+          "api_key": "API key (optional)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the device. Check the IP address and that it's reachable on your network.",
+      "invalid_api_key": "The API key was rejected. Double check the key and that it matches this device's serial/warranty number.",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "This device is already configured",
+      "reauth_successful": "Re-authentication was successful",
+      "reconfigure_successful": "Reconfiguration was successful",
+      "unique_id_mismatch": "This IP address belongs to a different Healthbox 3 device than the one being reconfigured."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "room_temperature": {
+        "name": "{room_name} Temperature"
+      },
+      "room_humidity": {
+        "name": "{room_name} Humidity"
+      },
+      "room_co2": {
+        "name": "{room_name} CO2"
+      },
+      "room_voc": {
+        "name": "{room_name} VOC"
+      },
+      "room_aqi": {
+        "name": "{room_name} Air quality index"
+      },
+      "global_aqi": {
+        "name": "Air quality index"
+      }
+    },
+    "select": {
+      "room_profile": {
+        "name": "{room_name} Profile"
+      }
+    },
+    "fan": {
+      "room_boost": {
+        "name": "{room_name} Boost"
+      },
+      "boost_all": {
+        "name": "Boost all"
+      }
+    }
+  }
+}
