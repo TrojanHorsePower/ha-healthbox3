@@ -38,6 +38,46 @@ async def test_room_sensors_report_values_and_empty_co2_is_unavailable(
     assert co2_room3.state == "500.0"
 
 
+async def test_room_airflow_sensor_reports_percentage_of_nominal(
+    hass, mock_api_client, v2_data, boost_status
+):
+    """Toilet (room 1): flow_rate=6.0 m3/h, nominal=30.0 m3/h -> 20%."""
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v2_data.serial,
+        healthbox_data=v2_data,
+        boost_status=boost_status,
+    )
+
+    airflow = hass.states.get(f"sensor.{_PREFIX}_toilet_airflow")
+    assert airflow is not None
+    assert float(airflow.state) == pytest.approx(20.0)
+
+
+async def test_room_airflow_sensor_not_created_without_nominal_or_flow_rate(
+    hass, mock_api_client, v2_data, boost_status
+):
+    """A room missing either nominal or flow_rate must simply not get an
+    airflow entity - not an error, not an "unavailable" entity.
+    """
+    stripped = copy.deepcopy(v2_data)
+    toilet = next(r for r in stripped.rooms if r.id == 1)
+    del toilet.parameters["nominal"]
+
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=stripped.serial,
+        healthbox_data=stripped,
+        boost_status=boost_status,
+    )
+
+    assert hass.states.get(f"sensor.{_PREFIX}_toilet_airflow") is None
+    # Other rooms, unaffected, still get their airflow sensor.
+    assert hass.states.get(f"sensor.{_PREFIX}_bathroom_airflow") is not None
+
+
 async def test_global_aqi_sensor_has_main_pollutant_and_room_attributes(
     hass, mock_api_client, v2_data, boost_status
 ):

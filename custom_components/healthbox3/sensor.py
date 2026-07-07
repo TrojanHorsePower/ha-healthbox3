@@ -13,7 +13,7 @@ from homeassistant.const import PERCENTAGE, UnitOfRatio, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .api import Sensor
+from .api import Room, Sensor
 from .const import (
     SENSOR_TYPE_AQI,
     SENSOR_TYPE_CO2,
@@ -88,6 +88,49 @@ ROOM_SENSOR_META: dict[str, RoomSensorMeta] = {
 }
 
 _GLOBAL_AQI_DISPLAY_PRECISION = 1
+_AIRFLOW_DISPLAY_PRECISION = 0
+
+
+def _room_nominal_flow(room: Room) -> float | None:
+    """Return a room's nominal (rated reference) flow rate in m3/h."""
+    param = room.parameters.get("nominal")
+    return param.value if param is not None else None
+
+
+def _room_current_flow_rate(room: Room) -> float | None:
+    """Return a room's current live flow rate in m3/h.
+
+    Sums flow_rate across every actuator that reports one. Both real
+    fixtures only ever have a single air-valve actuator per room, but the
+    API schema allows more than one (Room.actuators is a list) and
+    `nominal` is scoped to the whole room rather than a specific valve -
+    so if a room is ever fed by more than one valve, this combines their
+    live flow rates against that single room-level reference instead of
+    silently reading only the first one found.
+    """
+    rates = [
+        actuator.parameters["flow_rate"].value
+        for actuator in room.actuators
+        if "flow_rate" in actuator.parameters
+    ]
+    if not rates:
+        return None
+    return sum(rates)
+
+
+def _room_airflow_percentage(room: Room) -> float | None:
+    """Return a room's current flow rate as a percentage of nominal.
+
+    Not a 0-100 bounded value: boost can drive live flow well past
+    nominal (the boost API's own level field goes up to 200%), and
+    there's a nonzero floor even at rest - real-world values run roughly
+    10-200%, not 0-100.
+    """
+    nominal = _room_nominal_flow(room)
+    flow_rate = _room_current_flow_rate(room)
+    if not nominal or flow_rate is None:
+        return None
+    return flow_rate / nominal * 100
 
 
 async def async_setup_entry(
@@ -107,6 +150,10 @@ async def async_setup_entry(
                 continue
             entities.append(
                 Healthbox3RoomSensor(coordinator, serial, room.id, room.name, sensor.type, meta)
+            )
+        if _room_airflow_percentage(room) is not None:
+            entities.append(
+                Healthbox3RoomAirflowSensor(coordinator, serial, room.id, room.name)
             )
 
     if any(s.type == SENSOR_TYPE_GLOBAL_AQI for s in coordinator.data.healthbox.global_sensors):
@@ -185,6 +232,53 @@ class Healthbox3RoomSensor(Healthbox3Entity, SensorEntity):
         if main_pollutant is None or not main_pollutant.value:
             return None
         return {"main_pollutant": str(main_pollutant.value)}
+
+
+class Healthbox3RoomAirflowSensor(Healthbox3Entity, SensorEntity):
+    """A room's current airflow, as a percentage of its valve's nominal
+    (rated reference) flow rate - not a 0-100 bounded value, see
+    `_room_airflow_percentage`.
+    """
+
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_translation_key = "room_airflow"
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_suggested_display_precision = _AIRFLOW_DISPLAY_PRECISION
+
+    def __init__(
+        self,
+        coordinator: Healthbox3DataUpdateCoordinator,
+        serial: str,
+        room_id: int,
+        room_name: str,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, serial)
+        self._room_id = room_id
+        self._attr_translation_placeholders = {"room_name": room_name}
+        self._attr_unique_id = f"{serial}_room{room_id}_airflow"
+
+    def _find_room(self) -> Room | None:
+        return next(
+            (r for r in self.coordinator.data.healthbox.rooms if r.id == self._room_id),
+            None,
+        )
+
+    @property
+    def available(self) -> bool:
+        """Return whether this room currently reports both flow_rate and nominal."""
+        if not super().available:
+            return False
+        room = self._find_room()
+        return room is not None and _room_airflow_percentage(room) is not None
+
+    @property
+    def native_value(self) -> float | None:
+        """Return current flow rate as a percentage of nominal."""
+        room = self._find_room()
+        if room is None:
+            return None
+        return _room_airflow_percentage(room)
 
 
 class Healthbox3GlobalAqiSensor(Healthbox3Entity, SensorEntity):

@@ -71,6 +71,9 @@
       "room_aqi": {
         "name": "{room_name} Air quality index"
       },
+      "room_airflow": {
+        "name": "{room_name} Airflow"
+      },
       "global_aqi": {
         "name": "Air quality index"
       }
