@@ -6,7 +6,12 @@ from contextlib import contextmanager
 from dataclasses import replace
 from unittest.mock import AsyncMock, patch
 
-from homeassistant.config_entries import SOURCE_REAUTH, SOURCE_RECONFIGURE, SOURCE_USER
+from homeassistant.config_entries import (
+    SOURCE_INTEGRATION_DISCOVERY,
+    SOURCE_REAUTH,
+    SOURCE_RECONFIGURE,
+    SOURCE_USER,
+)
 from homeassistant.const import CONF_API_KEY, CONF_HOST
 from homeassistant.data_entry_flow import FlowResultType
 
@@ -486,6 +491,68 @@ async def test_duplicate_device_aborts(hass, v1_data):
 
         assert result["type"] is FlowResultType.ABORT
         assert result["reason"] == "already_configured"
+
+
+async def test_integration_discovery_relocates_existing_entry(hass, v1_data):
+    """Triggered internally by the coordinator - never shown to the user
+    as a form, always resolves on the first step.
+    """
+    entry = make_config_entry(hass, serial=v1_data.serial)
+    assert entry.data[CONF_HOST] == "192.0.2.1"
+
+    with _patch_client() as mock_cls:
+        instance = mock_cls.return_value
+        instance.async_get_v1_data_current = AsyncMock(return_value=v1_data)
+
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": SOURCE_INTEGRATION_DISCOVERY},
+            data={CONF_HOST: "192.0.2.99"},
+        )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "relocated"
+    assert entry.data[CONF_HOST] == "192.0.2.99"
+
+
+async def test_integration_discovery_cannot_connect_leaves_entry_untouched(hass, v1_data):
+    entry = make_config_entry(hass, serial=v1_data.serial)
+
+    with _patch_client() as mock_cls:
+        instance = mock_cls.return_value
+        instance.async_get_v1_data_current = AsyncMock(
+            side_effect=api_mod.Healthbox3ConnectionError("no route")
+        )
+
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": SOURCE_INTEGRATION_DISCOVERY},
+            data={CONF_HOST: "192.0.2.99"},
+        )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "cannot_connect"
+    assert entry.data[CONF_HOST] == "192.0.2.1"
+
+
+async def test_integration_discovery_no_matching_entry(hass, v1_data):
+    """No existing entry has this serial - nothing to relocate, and this
+    must not create a new entry either (it's not a "new device setup"
+    path, only a relocate-existing one).
+    """
+    with _patch_client() as mock_cls:
+        instance = mock_cls.return_value
+        instance.async_get_v1_data_current = AsyncMock(return_value=v1_data)
+
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": SOURCE_INTEGRATION_DISCOVERY},
+            data={CONF_HOST: "192.0.2.99"},
+        )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "no_matching_entry"
+    assert len(hass.config_entries.async_entries(DOMAIN)) == 0
 
 
 async def test_reauth_flow_success_updates_entry(

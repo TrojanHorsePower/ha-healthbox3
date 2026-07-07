@@ -7,8 +7,10 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 import logging
 
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import SOURCE_INTEGRATION_DISCOVERY, ConfigEntry
+from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import discovery_flow
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import (
@@ -19,6 +21,7 @@ from .api import (
     Healthbox3Error,
     Healthbox3InvalidResponseError,
     HealthboxData,
+    async_discover_broadcast,
 )
 from .const import (
     BOOST_DURATION_PRESETS,
@@ -108,11 +111,58 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
         self.boost_all_params = BoostParams(
             level=BOOST_FALLBACK_LEVEL, timeout=BOOST_FALLBACK_TIMEOUT
         )
+        self._relocate_attempted = False
 
     async def _async_update_data(self) -> Healthbox3Data:
         healthbox = await self._async_get_healthbox_data()
         boost = await self._async_get_boost_data(healthbox)
         return Healthbox3Data(healthbox=healthbox, boost=boost)
+
+    async def _async_try_relocate(self) -> None:
+        """Best-effort: if this entry's device is answering at a new IP
+        (e.g. a DHCP lease renewal), find it via broadcast discovery and
+        trigger a silent, invisible-to-the-user reconnect.
+
+        Only attempted once per outage, not on every failed poll (every
+        DEFAULT_SCAN_INTERVAL indefinitely) - the device may simply be
+        offline for an unrelated reason, and there's no reason to keep
+        broadcasting while that sorts itself out. Reset on the next
+        successful poll.
+
+        Triggers a real config flow (source integration_discovery) rather
+        than updating the entry directly, so the same identity
+        verification (a real HTTP call, not just trusting the broadcast
+        reply) used everywhere else in this integration also gates this -
+        see Healthbox3ConfigFlow.async_step_integration_discovery.
+        """
+        if self._relocate_attempted:
+            return
+        self._relocate_attempted = True
+
+        try:
+            devices = await async_discover_broadcast()
+        except OSError:
+            _LOGGER.debug("Relocate broadcast discovery failed", exc_info=True)
+            return
+
+        match = next(
+            (d for d in devices if d.serial == self.config_entry.unique_id), None
+        )
+        if match is None or match.ip == self.config_entry.data[CONF_HOST]:
+            return
+
+        _LOGGER.info(
+            "Healthbox 3 %s found at new address %s (was %s); reconnecting",
+            self.config_entry.unique_id,
+            match.ip,
+            self.config_entry.data[CONF_HOST],
+        )
+        discovery_flow.async_create_flow(
+            self.hass,
+            DOMAIN,
+            context={"source": SOURCE_INTEGRATION_DISCOVERY},
+            data={CONF_HOST: match.ip},
+        )
 
     async def _async_get_healthbox_data(self) -> HealthboxData:
         if not self.use_v2:
@@ -120,10 +170,11 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
 
         key_invalid = False
         try:
-            return await self.client.async_get_v2_data_current()
+            data = await self.client.async_get_v2_data_current()
         except Healthbox3AuthenticationError:
             key_invalid = True
         except Healthbox3ConnectionError as err:
+            await self._async_try_relocate()
             raise UpdateFailed(f"Error communicating with Healthbox 3: {err}") from err
         except Healthbox3InvalidResponseError as err:
             if not await self._async_api_key_still_valid():
@@ -132,6 +183,9 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
                 raise UpdateFailed(
                     f"Error communicating with Healthbox 3: {err}"
                 ) from err
+        else:
+            self._relocate_attempted = False
+            return data
 
         assert key_invalid  # every branch above either returns or sets this
         self._async_handle_key_invalid()
@@ -139,11 +193,14 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
 
     async def _async_get_v1_data(self) -> HealthboxData:
         try:
-            return await self.client.async_get_v1_data_current()
+            data = await self.client.async_get_v1_data_current()
         except Healthbox3ConnectionError as err:
+            await self._async_try_relocate()
             raise UpdateFailed(f"Error communicating with Healthbox 3: {err}") from err
         except Healthbox3InvalidResponseError as err:
             raise UpdateFailed(f"Error communicating with Healthbox 3: {err}") from err
+        self._relocate_attempted = False
+        return data
 
     async def _async_api_key_still_valid(self) -> bool:
         """Disambiguate a v2 data/current parse failure from a revoked key.

@@ -49,8 +49,11 @@
     },
     "abort": {
       "already_configured": "This device is already configured",
+      "cannot_connect": "Failed to connect to the device.",
+      "no_matching_entry": "No existing Healthbox 3 entry matches this device.",
       "reauth_successful": "Re-authentication was successful",
       "reconfigure_successful": "Reconfiguration was successful",
+      "relocated": "This device's connection info was updated automatically after it was found at a new network address.",
       "unique_id_mismatch": "This IP address belongs to a different Healthbox 3 device than the one being reconfigured."
     }
   },

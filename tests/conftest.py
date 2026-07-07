@@ -44,6 +44,19 @@ def mock_discover_broadcast():
         yield mock
 
 
+@pytest.fixture(autouse=True)
+def mock_coordinator_discover_broadcast():
+    """Same reasoning as mock_discover_broadcast, for the coordinator's own
+    relocate-on-connection-error probe (a separate import into
+    coordinator.py, not the same patch target as the config flow's).
+    """
+    with patch(
+        "custom_components.healthbox3.coordinator.async_discover_broadcast",
+        AsyncMock(return_value=[]),
+    ) as mock:
+        yield mock
+
+
 @pytest.fixture
 def v1_data_raw() -> dict:
     """Raw JSON from a real device's /v1/api/data/current."""

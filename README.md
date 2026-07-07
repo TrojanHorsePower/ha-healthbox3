@@ -38,6 +38,9 @@ using their real branding here could wrongly imply official endorsement.
 - Automatic reauthentication prompt if your API key stops working, with a
   graceful fallback to basic (v1) functionality in the meantime rather than
   entities going unavailable.
+- Automatic, silent reconnection if your Healthbox 3's IP address changes
+  (e.g. a DHCP lease renewal) after setup - no notification, no action
+  needed.
 
 ## Use cases
 
@@ -100,14 +103,21 @@ search "Renson Healthbox 3".
 
 ### Changing the IP address or API key later
 
-If your Healthbox 3 gets a new IP (e.g. a DHCP reassignment), you don't
-need to remove and re-add the integration - use **Settings → Devices &
-Services → Renson Healthbox 3 → Reconfigure**. It re-validates
-connectivity against the new address and confirms (by serial number) that
-it's still the *same* device before updating anything in place, so your
-existing entities, history, and automations keep working. The API key
-field is left blank by default and only changed if you type a new value -
-leaving it blank keeps whatever key is already stored.
+If your Healthbox 3 gets a new IP (e.g. a DHCP reassignment), you usually
+don't need to do anything: once the integration notices it can't reach
+the device anymore, it automatically tries to find it again on the
+network and reconnects on its own, silently, with no action needed and no
+notification shown. This only works for an entry that was already
+connected at least once - see [Known limitations](#known-limitations).
+
+If it doesn't (or you'd rather fix it immediately instead of waiting),
+use **Settings → Devices & Services → Renson Healthbox 3 → Reconfigure**.
+It re-validates connectivity against the new address and confirms (by
+serial number) that it's still the *same* device before updating anything
+in place, so your existing entities, history, and automations keep
+working. The API key field is left blank by default and only changed if
+you type a new value - leaving it blank keeps whatever key is already
+stored.
 
 ### Getting an API key (optional, but recommended)
 
@@ -289,6 +299,13 @@ automatically once it's reachable again - no restart required.
   all on the author's own network during development. When that happens,
   setup falls through to manual IP entry with no error shown; this is
   expected, not a bug.
+- **Automatic reconnection after an IP change only applies once an entry
+  has connected successfully at least once.** If your Healthbox 3's IP is
+  already wrong the very first time you set up the integration (or it's
+  never successfully connected since), there's no running coordinator yet
+  to notice a failure and go looking for it - use Reconfigure (see
+  [Changing the IP address or API key later](#changing-the-ip-address-or-api-key-later))
+  or fix the address and retry setup instead.
 - **Without an API key**, only basic room/valve data and boost control are
   available - no temperature/humidity/CO2/VOC/air-quality sensors and no
   ventilation profile control. This is a limitation of the device's v1 API,

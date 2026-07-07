@@ -172,6 +172,33 @@ class Healthbox3ConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
+    async def async_step_integration_discovery(
+        self, discovery_info: dict[str, Any]
+    ) -> ConfigFlowResult:
+        """Silently relocate an existing entry to a new IP.
+
+        Not real Home Assistant zeroconf/DHCP/etc. discovery - Healthbox 3
+        has no passive discovery protocol, only the active UDP broadcast
+        used elsewhere in this file. This step is only ever triggered
+        internally, by the coordinator (via
+        homeassistant.helpers.discovery_flow), after it has already
+        matched a broadcast response's serial against a specific existing
+        entry's own unique_id. It always resolves on this first step -
+        either `_abort_if_unique_id_configured` (which updates the
+        entry's host and schedules a reload) or an early abort - so it
+        never shows the user a form.
+        """
+        host = discovery_info[CONF_HOST]
+        client = Healthbox3ApiClient(host, async_get_clientsession(self.hass))
+        try:
+            data = await client.async_get_v1_data_current()
+        except Healthbox3Error:
+            return self.async_abort(reason="cannot_connect")
+
+        await self.async_set_unique_id(data.serial)
+        self._abort_if_unique_id_configured(updates={CONF_HOST: host}, error="relocated")
+        return self.async_abort(reason="no_matching_entry")
+
     async def async_step_api_key(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
