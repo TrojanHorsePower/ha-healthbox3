@@ -19,6 +19,193 @@ def _patch_client():
     return patch("custom_components.healthbox3.config_flow.Healthbox3ApiClient")
 
 
+def _discovery_info(
+    *, ip: str, serial: str, description: str = "Healthbox 3.0"
+) -> api_mod.DiscoveryInfo:
+    return api_mod.DiscoveryInfo(
+        device="HEALTHBOX3",
+        firmware_version="2.6.9",
+        ip=ip,
+        mac="00:11:22:33:44:55",
+        serial=serial,
+        warranty_number="warranty-123",
+        scope="HEALTHBOX3",
+        description=description,
+    )
+
+
+async def test_user_flow_single_discovered_device_skips_to_confirm(
+    hass, mock_discover_broadcast, mock_api_client, v1_data, boost_status
+):
+    mock_discover_broadcast.return_value = [
+        _discovery_info(ip="192.0.2.1", serial=v1_data.serial)
+    ]
+    mock_api_client.async_get_api_key_status = AsyncMock(
+        return_value=api_mod.ApiKeyStatus(
+            state="empty",
+            disable_telemetry_data_allowed=False,
+            local_sensor_data_allowed=False,
+        )
+    )
+    mock_api_client.async_get_v1_data_current = AsyncMock(return_value=v1_data)
+    mock_api_client.async_get_boost = AsyncMock(return_value=boost_status)
+
+    with _patch_client() as mock_cls:
+        instance = mock_cls.return_value
+        instance.async_get_v1_data_current = AsyncMock(return_value=v1_data)
+
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_USER}
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "discovery_confirm"
+        assert result["description_placeholders"]["ip"] == "192.0.2.1"
+
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "api_key"
+
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        assert result["data"][CONF_HOST] == "192.0.2.1"
+    await hass.async_block_till_done()
+
+
+async def test_user_flow_multiple_discovered_devices_offers_selection(
+    hass, mock_discover_broadcast, mock_api_client, v1_data, boost_status
+):
+    mock_discover_broadcast.return_value = [
+        _discovery_info(
+            ip="192.0.2.1", serial="serial-1", description="Healthbox 3.0 (kitchen)"
+        ),
+        _discovery_info(
+            ip="192.0.2.2", serial="serial-2", description="Healthbox 3.0 (garage)"
+        ),
+    ]
+    mock_api_client.async_get_api_key_status = AsyncMock(
+        return_value=api_mod.ApiKeyStatus(
+            state="empty",
+            disable_telemetry_data_allowed=False,
+            local_sensor_data_allowed=False,
+        )
+    )
+    mock_api_client.async_get_v1_data_current = AsyncMock(return_value=v1_data)
+    mock_api_client.async_get_boost = AsyncMock(return_value=boost_status)
+
+    with _patch_client() as mock_cls:
+        instance = mock_cls.return_value
+        instance.async_get_v1_data_current = AsyncMock(return_value=v1_data)
+
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_USER}
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "discovery_select"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_HOST: "192.0.2.2"}
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "api_key"
+
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        assert result["data"][CONF_HOST] == "192.0.2.2"
+    await hass.async_block_till_done()
+
+
+async def test_user_flow_no_devices_discovered_falls_back_to_manual_entry(
+    hass, mock_discover_broadcast
+):
+    """mock_discover_broadcast defaults to returning no devices - this test
+    just makes that fallback-to-manual-entry behavior explicit and named,
+    rather than relying on it as an implicit side effect of every other
+    user-flow test in this file.
+    """
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_USER}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "user"
+    mock_discover_broadcast.assert_awaited_once()
+
+
+async def test_user_flow_discovery_socket_error_falls_back_to_manual_entry(
+    hass, mock_discover_broadcast
+):
+    """A real socket-creation failure (distinct from the normal "nobody
+    answered" case) must be swallowed the same way - never raised into the
+    flow or left hanging.
+    """
+    mock_discover_broadcast.side_effect = OSError("network unreachable")
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_USER}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "user"
+
+
+async def test_user_flow_filters_already_configured_device_from_discovery(
+    hass, mock_discover_broadcast, v1_data
+):
+    """A network with exactly one device that's already configured must
+    behave like the "0 new devices found" case (manual entry form), not
+    "1 device found" (discovery_confirm) - otherwise the user would be
+    routed into a dead end that just aborts as already_configured.
+    """
+    make_config_entry(hass, serial=v1_data.serial)
+    mock_discover_broadcast.return_value = [
+        _discovery_info(ip="192.0.2.1", serial=v1_data.serial)
+    ]
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_USER}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "user"
+
+
+async def test_user_flow_filters_already_configured_device_out_of_multiple(
+    hass, mock_discover_broadcast, mock_api_client, v1_data, boost_status
+):
+    """Filtering can also demote a multi-device discovery down to exactly
+    one new device - which must then skip straight to discovery_confirm,
+    not discovery_select.
+    """
+    make_config_entry(hass, serial=v1_data.serial)
+    new_device_data = replace(v1_data, serial="new-serial")
+    mock_discover_broadcast.return_value = [
+        _discovery_info(ip="192.0.2.1", serial=v1_data.serial),  # already configured
+        _discovery_info(ip="192.0.2.2", serial="new-serial"),
+    ]
+    mock_api_client.async_get_api_key_status = AsyncMock(
+        return_value=api_mod.ApiKeyStatus(
+            state="empty",
+            disable_telemetry_data_allowed=False,
+            local_sensor_data_allowed=False,
+        )
+    )
+    mock_api_client.async_get_v1_data_current = AsyncMock(return_value=new_device_data)
+    mock_api_client.async_get_boost = AsyncMock(return_value=boost_status)
+
+    with _patch_client() as mock_cls:
+        instance = mock_cls.return_value
+        instance.async_get_v1_data_current = AsyncMock(return_value=new_device_data)
+
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_USER}
+        )
+
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "discovery_confirm"
+        assert result["description_placeholders"]["ip"] == "192.0.2.2"
+    await hass.async_block_till_done()
+
+
 async def test_user_flow_success_without_api_key(
     hass, mock_api_client, v1_data, boost_status
 ):

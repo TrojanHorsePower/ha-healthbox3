@@ -324,6 +324,77 @@ async def _async_udp_discover(host: str, timeout: float) -> dict[str, Any]:
         ) from err
 
 
+class _BroadcastDiscoveryProtocol(asyncio.DatagramProtocol):
+    """Datagram protocol that collects every response received during a
+    fixed listening window.
+
+    Unlike `_DiscoveryProtocol` (a single future resolved by the first
+    reply from one known host), a broadcast can draw replies from multiple
+    devices - or none at all - so there's no single "the" response to
+    resolve early on; the caller just lets the window run out.
+    """
+
+    def __init__(self) -> None:
+        self.responses: list[bytes] = []
+
+    def datagram_received(self, data: bytes, addr: tuple[str, int]) -> None:
+        self.responses.append(data)
+
+    def error_received(self, exc: Exception) -> None:
+        _LOGGER.debug("Broadcast discovery socket error: %s", exc)
+
+
+async def _async_udp_discover_broadcast(timeout: float) -> list[dict[str, Any]]:
+    """Broadcast a discovery request and collect all responses received
+    within `timeout` seconds.
+
+    An empty result is a normal outcome, not an error - broadcast delivery
+    is confirmed unreliable on some networks (AP client isolation, IGMP
+    snooping, VLAN segmentation), so "nobody answered" must be as
+    unsurprising to callers as "one or more devices answered".
+    """
+    loop = asyncio.get_running_loop()
+    transport, protocol = await loop.create_datagram_endpoint(
+        _BroadcastDiscoveryProtocol,
+        local_addr=("0.0.0.0", 0),  # unbound source port; broadcast needs no specific interface
+        allow_broadcast=True,
+    )
+    try:
+        transport.sendto(DISCOVERY_MESSAGE, ("255.255.255.255", DISCOVERY_PORT))
+        await asyncio.sleep(timeout)
+    finally:
+        transport.close()
+
+    results = []
+    for data in protocol.responses:
+        try:
+            results.append(json.loads(data.decode()))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            _LOGGER.debug("Ignoring malformed broadcast discovery response: %r", data)
+    return results
+
+
+async def async_discover_broadcast(
+    timeout: float = DISCOVERY_TIMEOUT,
+) -> list[DiscoveryInfo]:
+    """Broadcast-discover Healthbox 3 devices on the local network.
+
+    Returns an empty list - not an error - if no devices respond. Callers
+    (the config flow) must fall back to manual entry rather than treating
+    an empty result as a failure.
+    """
+    raw_responses = await _async_udp_discover_broadcast(timeout)
+    devices: dict[str, DiscoveryInfo] = {}
+    for raw in raw_responses:
+        try:
+            info = _parse_discovery(raw)
+        except (KeyError, TypeError):
+            _LOGGER.debug("Ignoring discovery response with unexpected shape: %r", raw)
+            continue
+        devices[info.serial] = info  # de-dupe repeat replies from the same device
+    return list(devices.values())
+
+
 class Healthbox3ApiClient:
     """Client for the Healthbox 3 local v1/v2 HTTP API."""
 

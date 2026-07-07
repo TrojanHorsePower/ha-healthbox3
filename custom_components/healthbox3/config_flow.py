@@ -12,10 +12,18 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_API_KEY, CONF_HOST
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .api import Healthbox3ApiClient, Healthbox3ConnectionError, Healthbox3Error
+from .api import (
+    DiscoveryInfo,
+    Healthbox3ApiClient,
+    Healthbox3ConnectionError,
+    Healthbox3Error,
+    async_discover_broadcast,
+)
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
+
+_MANUAL_HOST_SCHEMA = vol.Schema({vol.Required(CONF_HOST): str})
 
 
 class Healthbox3ConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -27,32 +35,113 @@ class Healthbox3ConfigFlow(ConfigFlow, domain=DOMAIN):
         """Initialize the config flow."""
         self._host: str | None = None
         self._serial: str | None = None
+        self._discovered_device: DiscoveryInfo | None = None
+        self._discovered_devices: list[DiscoveryInfo] = []
+
+    async def _async_validate_host(self, host: str) -> dict[str, str]:
+        """Validate v1 connectivity for `host` and, on success, record the
+        unique id/host/serial for the rest of the flow.
+
+        Returns an errors dict (empty on success) in the shape
+        `async_show_form` expects - shared by manual entry and both
+        discovery paths so none of them duplicate this logic.
+        """
+        client = Healthbox3ApiClient(host, async_get_clientsession(self.hass))
+        try:
+            data = await client.async_get_v1_data_current()
+        except Healthbox3ConnectionError:
+            return {"base": "cannot_connect"}
+        except Healthbox3Error:
+            _LOGGER.exception("Unexpected error validating Healthbox 3 at %s", host)
+            return {"base": "unknown"}
+
+        await self.async_set_unique_id(data.serial)
+        self._abort_if_unique_id_configured()
+        self._host = host
+        self._serial = data.serial
+        return {}
+
+    async def _async_try_discover_broadcast(self) -> list[DiscoveryInfo]:
+        """Best-effort broadcast discovery, already-configured devices
+        filtered out.
+
+        Any failure (e.g. a real socket-creation error, distinct from the
+        normal "nobody answered" case which already comes back as an empty
+        list) is treated the same as "found nothing" - discovery must never
+        block or fail the flow, only skip straight to manual entry.
+        """
+        try:
+            devices = await async_discover_broadcast()
+        except OSError:
+            _LOGGER.debug("Broadcast discovery failed", exc_info=True)
+            return []
+
+        current_ids = self._async_current_ids()
+        return [d for d in devices if d.serial not in current_ids]
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Ask for the device IP and validate v1 connectivity."""
-        errors: dict[str, str] = {}
-        if user_input is not None:
-            host = user_input[CONF_HOST]
-            client = Healthbox3ApiClient(host, async_get_clientsession(self.hass))
-            try:
-                data = await client.async_get_v1_data_current()
-            except Healthbox3ConnectionError:
-                errors["base"] = "cannot_connect"
-            except Healthbox3Error:
-                _LOGGER.exception("Unexpected error validating Healthbox 3 at %s", host)
-                errors["base"] = "unknown"
-            else:
-                await self.async_set_unique_id(data.serial)
-                self._abort_if_unique_id_configured()
-                self._host = host
-                self._serial = data.serial
-                return await self.async_step_api_key()
+        """Attempt automatic discovery first; fall back to manual IP entry."""
+        if user_input is None:
+            devices = await self._async_try_discover_broadcast()
+            if len(devices) == 1:
+                self._discovered_device = devices[0]
+                return await self.async_step_discovery_confirm()
+            if len(devices) > 1:
+                self._discovered_devices = devices
+                return await self.async_step_discovery_select()
+            return self.async_show_form(
+                step_id="user", data_schema=_MANUAL_HOST_SCHEMA
+            )
+
+        errors = await self._async_validate_host(user_input[CONF_HOST])
+        if not errors:
+            return await self.async_step_api_key()
 
         return self.async_show_form(
-            step_id="user",
-            data_schema=vol.Schema({vol.Required(CONF_HOST): str}),
+            step_id="user", data_schema=_MANUAL_HOST_SCHEMA, errors=errors
+        )
+
+    async def async_step_discovery_select(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Let the user pick from multiple broadcast-discovered devices."""
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            errors = await self._async_validate_host(user_input[CONF_HOST])
+            if not errors:
+                return await self.async_step_api_key()
+
+        options = {
+            device.ip: f"{device.description} ({device.ip})"
+            for device in self._discovered_devices
+        }
+        return self.async_show_form(
+            step_id="discovery_select",
+            data_schema=vol.Schema({vol.Required(CONF_HOST): vol.In(options)}),
+            errors=errors,
+        )
+
+    async def async_step_discovery_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Confirm the single broadcast-discovered device before continuing."""
+        device = self._discovered_device
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            errors = await self._async_validate_host(device.ip)
+            if not errors:
+                return await self.async_step_api_key()
+
+        self._set_confirm_only()
+        return self.async_show_form(
+            step_id="discovery_confirm",
+            description_placeholders={
+                "description": device.description,
+                "ip": device.ip,
+                "serial": device.serial,
+            },
             errors=errors,
         )
 

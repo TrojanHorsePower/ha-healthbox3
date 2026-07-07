@@ -28,6 +28,22 @@ def auto_enable_custom_integrations(enable_custom_integrations):
     yield
 
 
+@pytest.fixture(autouse=True)
+def mock_discover_broadcast():
+    """Default broadcast discovery to "nothing found".
+
+    Config flow tests that don't care about discovery (i.e. most of them)
+    would otherwise try to open a real UDP socket the moment the user step
+    runs, since it now attempts discovery unconditionally. Tests that do
+    care override this mock's return_value/side_effect explicitly.
+    """
+    with patch(
+        "custom_components.healthbox3.config_flow.async_discover_broadcast",
+        AsyncMock(return_value=[]),
+    ) as mock:
+        yield mock
+
+
 @pytest.fixture
 def v1_data_raw() -> dict:
     """Raw JSON from a real device's /v1/api/data/current."""

@@ -3,10 +3,21 @@
     "step": {
       "user": {
         "title": "Connect to your Healthbox 3",
-        "description": "Enter the IP address or hostname of your Renson Healthbox 3 on your local network.",
+        "description": "No devices found automatically - enter the IP address or hostname of your Renson Healthbox 3 on your local network.",
         "data": {
           "host": "Host"
         }
+      },
+      "discovery_select": {
+        "title": "Select a Healthbox 3",
+        "description": "Multiple devices were found on your network. Select the one to set up.",
+        "data": {
+          "host": "Device"
+        }
+      },
+      "discovery_confirm": {
+        "title": "Set up this Healthbox 3?",
+        "description": "Found {description} (serial: {serial}) at {ip}."
       },
       "api_key": {
         "title": "Optional: unlock full sensor data",

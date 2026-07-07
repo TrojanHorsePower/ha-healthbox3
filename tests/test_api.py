@@ -320,3 +320,184 @@ async def test_discovery_protocol_error_received_sets_future_exception():
 
     # Same already-done guard as datagram_received.
     protocol.error_received(OSError("second, should be ignored"))
+
+
+# --- broadcast discovery ---
+
+
+class _FakeBroadcastTransport:
+    """Fake transport for the broadcast collect-many protocol.
+
+    Unlike unicast's `_FakeDatagramTransport`, the broadcast socket isn't
+    "connected" to a single remote, so `sendto` here takes an explicit
+    address each call, and `on_sendto` receives it too.
+    """
+
+    def __init__(self, protocol: asyncio.DatagramProtocol, on_sendto) -> None:
+        self._protocol = protocol
+        self._on_sendto = on_sendto
+        self.closed = False
+
+    def sendto(self, data: bytes, addr: tuple[str, int] | None = None) -> None:
+        self._on_sendto(self._protocol, data, addr)
+
+    def close(self) -> None:
+        self.closed = True
+
+
+async def _discover_broadcast_with_fake_transport(timeout: float, on_sendto):
+    """Run the real _async_udp_discover_broadcast with
+    loop.create_datagram_endpoint swapped for a fake, same approach as
+    _discover_with_fake_transport - only the literal OS socket creation is
+    faked, everything downstream (protocol, timeout, parsing) is real.
+    """
+    loop = asyncio.get_running_loop()
+    real_create_datagram_endpoint = loop.create_datagram_endpoint
+
+    async def _fake_create_datagram_endpoint(protocol_factory, **kwargs):
+        protocol = protocol_factory()
+        transport = _FakeBroadcastTransport(protocol, on_sendto)
+        return transport, protocol
+
+    loop.create_datagram_endpoint = _fake_create_datagram_endpoint
+    try:
+        return await api_mod._async_udp_discover_broadcast(timeout)
+    finally:
+        loop.create_datagram_endpoint = real_create_datagram_endpoint
+
+
+async def test_async_udp_discover_broadcast_collects_response(discovery_raw):
+    """A broadcast reply is decoded the same way a unicast one is."""
+    reply = json.dumps(discovery_raw).encode()
+
+    def _on_sendto(protocol, data, addr):
+        assert data == api_mod.DISCOVERY_MESSAGE
+        assert addr == ("255.255.255.255", api_mod.DISCOVERY_PORT)
+        protocol.datagram_received(reply, ("192.0.2.1", api_mod.DISCOVERY_PORT))
+
+    results = await _discover_broadcast_with_fake_transport(0.05, _on_sendto)
+
+    assert results == [discovery_raw]
+
+
+async def test_async_udp_discover_broadcast_collects_multiple_responses(discovery_raw):
+    """Broadcast can draw replies from more than one device, unlike unicast
+    discover's single-future/first-response-wins design.
+    """
+    other = {**discovery_raw, "serial": "other-serial", "IP": "192.0.2.2"}
+
+    def _on_sendto(protocol, data, addr):
+        protocol.datagram_received(
+            json.dumps(discovery_raw).encode(), ("192.0.2.1", api_mod.DISCOVERY_PORT)
+        )
+        protocol.datagram_received(
+            json.dumps(other).encode(), ("192.0.2.2", api_mod.DISCOVERY_PORT)
+        )
+
+    results = await _discover_broadcast_with_fake_transport(0.05, _on_sendto)
+
+    assert results == [discovery_raw, other]
+
+
+async def test_async_udp_discover_broadcast_times_out_with_no_responses():
+    """No replies within the window must return an empty list, not hang or
+    raise - broadcast delivery being unreliable is the expected common
+    case, not a failure state.
+    """
+
+    def _on_sendto(protocol, data, addr):
+        pass  # deliberately silent - no reply
+
+    results = await _discover_broadcast_with_fake_transport(0.05, _on_sendto)
+
+    assert results == []
+
+
+async def test_async_udp_discover_broadcast_ignores_malformed_response(discovery_raw):
+    """A garbage reply from one device must not prevent a good reply from
+    another device being returned.
+    """
+
+    def _on_sendto(protocol, data, addr):
+        protocol.datagram_received(b"not valid json", ("192.0.2.9", api_mod.DISCOVERY_PORT))
+        protocol.datagram_received(
+            json.dumps(discovery_raw).encode(), ("192.0.2.1", api_mod.DISCOVERY_PORT)
+        )
+
+    results = await _discover_broadcast_with_fake_transport(0.05, _on_sendto)
+
+    assert results == [discovery_raw]
+
+
+async def test_async_discover_broadcast_parses_and_dedupes_by_serial(
+    monkeypatch, discovery_raw
+):
+    """async_discover_broadcast wires the raw JSON through _parse_discovery
+    and de-dupes repeat replies from the same device (same serial).
+    """
+
+    async def _fake_udp_discover_broadcast(timeout):
+        return [discovery_raw, dict(discovery_raw)]  # same device, two replies
+
+    monkeypatch.setattr(
+        api_mod, "_async_udp_discover_broadcast", _fake_udp_discover_broadcast
+    )
+
+    devices = await api_mod.async_discover_broadcast()
+
+    assert len(devices) == 1
+    assert devices[0].serial == discovery_raw["serial"]
+
+
+async def test_async_discover_broadcast_returns_empty_list_with_no_responses(
+    monkeypatch,
+):
+    async def _fake_udp_discover_broadcast(timeout):
+        return []
+
+    monkeypatch.setattr(
+        api_mod, "_async_udp_discover_broadcast", _fake_udp_discover_broadcast
+    )
+
+    assert await api_mod.async_discover_broadcast() == []
+
+
+async def test_async_discover_broadcast_skips_malformed_shape(monkeypatch, discovery_raw):
+    """A response missing required fields is skipped, not fatal to the
+    whole batch.
+    """
+    bad = {"unexpected": "shape"}
+
+    async def _fake_udp_discover_broadcast(timeout):
+        return [bad, discovery_raw]
+
+    monkeypatch.setattr(
+        api_mod, "_async_udp_discover_broadcast", _fake_udp_discover_broadcast
+    )
+
+    devices = await api_mod.async_discover_broadcast()
+
+    assert len(devices) == 1
+    assert devices[0].serial == discovery_raw["serial"]
+
+
+async def test_broadcast_discovery_protocol_collects_all_datagrams():
+    """Direct unit test of _BroadcastDiscoveryProtocol: unlike
+    _DiscoveryProtocol, every datagram is kept, not just the first.
+    """
+    protocol = api_mod._BroadcastDiscoveryProtocol()
+
+    protocol.datagram_received(b"first", ("127.0.0.1", 12345))
+    protocol.datagram_received(b"second", ("127.0.0.2", 12345))
+
+    assert protocol.responses == [b"first", b"second"]
+
+
+async def test_broadcast_discovery_protocol_error_received_does_not_raise():
+    """error_received just logs and returns - there's no future to fail,
+    since the caller collects over a fixed window instead of awaiting a
+    single response.
+    """
+    protocol = api_mod._BroadcastDiscoveryProtocol()
+
+    protocol.error_received(OSError("boom"))  # must not raise
