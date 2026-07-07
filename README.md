@@ -1,5 +1,12 @@
 # Renson Healthbox 3 for Home Assistant
 
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
+[![GitHub Release](https://img.shields.io/github/release/TrojanHorsePower/ha-healthbox3.svg)](https://github.com/TrojanHorsePower/ha-healthbox3/releases)
+[![License](https://img.shields.io/github/license/TrojanHorsePower/ha-healthbox3.svg)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/TrojanHorsePower/ha-healthbox3/ci.yml?label=CI)](https://github.com/TrojanHorsePower/ha-healthbox3/actions/workflows/ci.yml)
+[![HACS Validate](https://img.shields.io/github/actions/workflow/status/TrojanHorsePower/ha-healthbox3/hacs.yml?label=HACS%20Validate)](https://github.com/TrojanHorsePower/ha-healthbox3/actions/workflows/hacs.yml)
+[![hassfest](https://img.shields.io/github/actions/workflow/status/TrojanHorsePower/ha-healthbox3/hassfest.yml?label=hassfest)](https://github.com/TrojanHorsePower/ha-healthbox3/actions/workflows/hassfest.yml)
+
 A custom Home Assistant integration for the [Renson Healthbox
 3](https://www.renson.net/), a whole-house demand-controlled ventilation
 unit. It talks directly to the device over your local network - no cloud
@@ -49,6 +56,10 @@ using their real branding here could wrongly imply official endorsement.
 
 ### HACS
 
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=TrojanHorsePower&repository=ha-healthbox3&category=integration)
+
+Or manually:
+
 1. In HACS, add this repository as a custom repository (category:
    Integration).
 2. Install "Renson Healthbox 3".
@@ -62,8 +73,10 @@ Home Assistant.
 
 ## Configuration
 
-Configuration is done entirely through the Home Assistant UI
-(Settings → Devices & Services → Add Integration → "Renson Healthbox 3").
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=healthbox3)
+
+Or manually: **Settings** → **Devices & Services** → **Add Integration** →
+search "Renson Healthbox 3".
 
 1. **Device IP address.** Enter the IP address or hostname of your
    Healthbox 3 on your local network. The integration validates this by
