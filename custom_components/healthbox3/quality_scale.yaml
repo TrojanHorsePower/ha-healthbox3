@@ -75,7 +75,7 @@ rules:
     # config_flow's async_step_reauth/reauth_confirm, triggered by the
     # coordinator via ConfigEntry.async_start_reauth on a confirmed-invalid key.
   test-coverage: done
-    # Measured via pytest-cov: 95% line coverage (124 tests) across config
+    # Measured via pytest-cov: 95% line coverage (128 tests) across config
     # flow, coordinator, entities, diagnostics, real automation-engine
     # dispatch, and the unicast and broadcast UDP discovery implementations
     # (exercised through a fake datagram transport wired to the real

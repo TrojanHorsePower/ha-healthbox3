@@ -27,6 +27,9 @@ using their real branding here could wrongly imply official endorsement.
 - Per-room sensors for whichever of temperature, humidity, CO2, VOC and air
   quality index your device's hardware actually reports (varies by room).
 - A whole-house air quality index sensor.
+- A per-room airflow sensor, showing current airflow as a percentage of
+  that room's rated (nominal) flow - not capped at 100%, since boost can
+  push it well past nominal.
 - A boost `fan` entity per room (plus one for all rooms at once), with
   percentage/preset controls and a real-level attribute - see
   [Boost control](#boost-control).
@@ -154,6 +157,7 @@ v1-only functionality and prompted you to reauthenticate with a new key.
 | `sensor` | `<room> CO2` | Only created for rooms with a CO2 sensor; reads "unavailable" if the device reports it as not-yet-sampled |
 | `sensor` | `<room> VOC` | Only created for rooms with a VOC sensor |
 | `sensor` | `<room> Air quality index` | Only created for rooms with an air quality sensor; exposes `main_pollutant` when set |
+| `sensor` | `<room> Airflow` | Current airflow as % of that room's rated (nominal) flow; not capped at 100% - only created for rooms reporting both underlying values |
 | `sensor` | `Air quality index` | Whole-house AQI; exposes `main_pollutant` and `room` |
 | `select` | `<room> Profile` | eco/health/intense - only created with an active API key |
 | `fan` | `<room> Boost` | Boost for that room - see "Boost control" below |

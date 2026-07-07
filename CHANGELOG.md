@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Per-room airflow sensor, showing current airflow as a percentage of that
+  room's rated (nominal) flow. Only created for rooms that report the
+  underlying data. Not a 0-100 bounded percentage - boost can drive
+  airflow well past nominal, so values can run from roughly 10% up to
+  200%.
+
 ## [0.1.3] - 2026-07-07
 
 ### Added
