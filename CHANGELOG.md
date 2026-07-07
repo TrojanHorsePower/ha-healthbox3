@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Automatic network discovery during setup: the config flow now tries a UDP
+  broadcast to find your Healthbox 3 before asking for an IP address.
+  Exactly one device found is offered for confirmation; multiple found are
+  offered as a selection list; devices already configured are excluded
+  from either. If nothing responds within a few seconds - broadcast
+  delivery is unreliable on some networks (AP client isolation, IGMP
+  snooping, VLAN segmentation) - setup falls through to manual IP entry
+  with no error shown, exactly as before.
+
 ## [0.1.2] - 2026-07-07
 
 ### Changed
