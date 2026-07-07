@@ -79,6 +79,21 @@ class Healthbox3ConfigFlow(ConfigFlow, domain=DOMAIN):
         current_ids = self._async_current_ids()
         return [d for d in devices if d.serial not in current_ids]
 
+    async def _async_try_unicast_discover(self, host: str) -> DiscoveryInfo | None:
+        """Best-effort unicast probe against an already-validated host, to
+        enrich the confirmation display with mac/firmware.
+
+        Purely cosmetic: `host` has already passed the required HTTP
+        validation by the time this is called, so any failure here just
+        means less display detail, not an unverified device - never raises,
+        never blocks the flow past its own short timeout.
+        """
+        client = Healthbox3ApiClient(host, async_get_clientsession(self.hass))
+        try:
+            return await client.async_discover()
+        except (Healthbox3Error, OSError):
+            return None
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -96,12 +111,15 @@ class Healthbox3ConfigFlow(ConfigFlow, domain=DOMAIN):
             )
 
         errors = await self._async_validate_host(user_input[CONF_HOST])
-        if not errors:
-            return await self.async_step_api_key()
+        if errors:
+            return self.async_show_form(
+                step_id="user", data_schema=_MANUAL_HOST_SCHEMA, errors=errors
+            )
 
-        return self.async_show_form(
-            step_id="user", data_schema=_MANUAL_HOST_SCHEMA, errors=errors
-        )
+        self._discovered_device = await self._async_try_unicast_discover(self._host)
+        if self._discovered_device is not None:
+            return await self.async_step_discovery_confirm()
+        return await self.async_step_api_key()
 
     async def async_step_discovery_select(
         self, user_input: dict[str, Any] | None = None
@@ -126,11 +144,20 @@ class Healthbox3ConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_discovery_confirm(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Confirm the single broadcast-discovered device before continuing."""
+        """Confirm a discovered device before continuing.
+
+        Reached two ways: broadcast discovery (self._host is still None
+        here - validation happens on submit, same as manual entry always
+        has) or the manual-entry unicast enrichment probe (self._host was
+        already validated before this step was even reached, so submitting
+        here just continues - no redundant re-validation or unique_id
+        re-set).
+        """
         device = self._discovered_device
         errors: dict[str, str] = {}
         if user_input is not None:
-            errors = await self._async_validate_host(device.ip)
+            if self._host is None:
+                errors = await self._async_validate_host(device.ip)
             if not errors:
                 return await self.async_step_api_key()
 

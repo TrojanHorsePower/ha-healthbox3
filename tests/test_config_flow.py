@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import replace
 from unittest.mock import AsyncMock, patch
 
@@ -15,8 +16,24 @@ from custom_components.healthbox3.const import DOMAIN
 from .conftest import make_config_entry
 
 
+@contextmanager
 def _patch_client():
-    return patch("custom_components.healthbox3.config_flow.Healthbox3ApiClient")
+    """autospec=True so autodetected async methods (e.g. async_discover,
+    added for the post-manual-entry unicast enrichment probe) become
+    AsyncMocks instead of plain MagicMocks that raise TypeError when
+    awaited - same reasoning as conftest.py's mock_api_client fixture.
+
+    Defaults async_discover to "no reply" (None) so tests that don't care
+    about the unicast enrichment probe keep going straight to api_key,
+    exactly as they did before that probe existed; tests that do care
+    override it explicitly.
+    """
+    with patch(
+        "custom_components.healthbox3.config_flow.Healthbox3ApiClient",
+        autospec=True,
+    ) as mock_cls:
+        mock_cls.return_value.async_discover = AsyncMock(return_value=None)
+        yield mock_cls
 
 
 def _discovery_info(
@@ -204,6 +221,81 @@ async def test_user_flow_filters_already_configured_device_out_of_multiple(
         assert result["step_id"] == "discovery_confirm"
         assert result["description_placeholders"]["ip"] == "192.0.2.2"
     await hass.async_block_till_done()
+
+
+async def test_manual_entry_unicast_probe_responds_shows_discovery_confirm(
+    hass, mock_discover_broadcast, mock_api_client, v1_data, boost_status
+):
+    """After manual entry passes the required HTTP validation, a
+    responding unicast probe routes to discovery_confirm for display
+    enrichment - and confirming it must NOT re-run that HTTP validation.
+    """
+    discovered = _discovery_info(ip="192.0.2.1", serial=v1_data.serial)
+    mock_api_client.async_get_api_key_status = AsyncMock(
+        return_value=api_mod.ApiKeyStatus(
+            state="empty",
+            disable_telemetry_data_allowed=False,
+            local_sensor_data_allowed=False,
+        )
+    )
+    mock_api_client.async_get_v1_data_current = AsyncMock(return_value=v1_data)
+    mock_api_client.async_get_boost = AsyncMock(return_value=boost_status)
+
+    with _patch_client() as mock_cls:
+        instance = mock_cls.return_value
+        instance.async_get_v1_data_current = AsyncMock(return_value=v1_data)
+        instance.async_discover = AsyncMock(return_value=discovered)
+
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_USER}
+        )
+        assert result["step_id"] == "user"  # mock_discover_broadcast defaults to []
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_HOST: "192.0.2.1"}
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "discovery_confirm"
+        assert result["description_placeholders"]["ip"] == "192.0.2.1"
+        assert result["description_placeholders"]["serial"] == v1_data.serial
+
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "api_key"
+        instance.async_get_v1_data_current.assert_awaited_once()
+
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        assert result["data"][CONF_HOST] == "192.0.2.1"
+    await hass.async_block_till_done()
+
+
+async def test_manual_entry_unicast_probe_no_reply_skips_to_api_key(
+    hass, mock_discover_broadcast, v1_data
+):
+    """The confirmed real no-reply exception (Healthbox3ConnectionError -
+    _async_udp_discover wraps asyncio.wait_for's TimeoutError into this
+    before it ever reaches async_discover's caller) must be swallowed and
+    routed straight to api_key, exactly like today's behavior - no error,
+    no hang. The device was already verified reachable via the required
+    HTTP call; a failed unicast probe just means less display detail.
+    """
+    with _patch_client() as mock_cls:
+        instance = mock_cls.return_value
+        instance.async_get_v1_data_current = AsyncMock(return_value=v1_data)
+        instance.async_discover = AsyncMock(
+            side_effect=api_mod.Healthbox3ConnectionError("no discovery reply")
+        )
+
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_USER}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_HOST: "192.0.2.1"}
+        )
+
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "api_key"
 
 
 async def test_user_flow_success_without_api_key(
