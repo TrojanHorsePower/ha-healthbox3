@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-07-07
+
 ### Changed
 
 - Expanded the boost duration preset list from 5 options to 8: `5 min`,
@@ -59,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   every push and pull request.
 - README "Use cases", "Examples", and "Troubleshooting" sections.
 
-[Unreleased]: https://github.com/TrojanHorsePower/ha-healthbox3/compare/0.1.1...HEAD
+[Unreleased]: https://github.com/TrojanHorsePower/ha-healthbox3/compare/0.1.2...HEAD
+[0.1.2]: https://github.com/TrojanHorsePower/ha-healthbox3/compare/0.1.1...0.1.2
 [0.1.1]: https://github.com/TrojanHorsePower/ha-healthbox3/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/TrojanHorsePower/ha-healthbox3/releases/tag/0.1.0
