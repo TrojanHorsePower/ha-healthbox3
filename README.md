@@ -78,10 +78,14 @@ Home Assistant.
 Or manually: **Settings** → **Devices & Services** → **Add Integration** →
 search "Renson Healthbox 3".
 
-1. **Device IP address.** Enter the IP address or hostname of your
-   Healthbox 3 on your local network. The integration validates this by
-   calling the device's basic (v1) API before continuing - there's no
-   automatic network discovery yet (see [Known limitations](#known-limitations)).
+1. **Device IP address.** The integration first tries to find your
+   Healthbox 3 automatically via a UDP broadcast; if it finds one, confirm
+   it, or pick from a list if it finds more than one. If nothing answers
+   within a few seconds - broadcast discovery is unreliable on some
+   networks, see [Known limitations](#known-limitations) - enter the IP
+   address or hostname manually instead. Either way, the integration
+   validates connectivity by calling the device's basic (v1) API before
+   continuing.
 2. **API key (optional).** You can stop here and use the integration with
    basic functionality, or unlock full sensor data and profile control -
    see below.
@@ -270,13 +274,13 @@ automatically once it's reachable again - no restart required.
 
 ## Known limitations
 
-- **No automatic network discovery.** The device supports a UDP discovery
-  broadcast, but broadcast delivery is unreliable on many networks (AP
-  client isolation, IGMP snooping, and VLAN segmentation are all common
-  culprits) and didn't work at all during development. You must enter the
-  device's IP address manually. A future release may add unicast-based
-  discovery once you've entered an IP, to confirm device identity during
-  setup.
+- **Automatic network discovery is unreliable on some networks.** Setup
+  tries a UDP broadcast first, but delivery is commonly blocked by AP
+  client isolation, IGMP snooping, or VLAN segmentation - it didn't work at
+  all on the author's own network during development. When that happens,
+  setup falls through to manual IP entry with no error shown; this is
+  expected, not a bug. A future release may also use unicast discovery to
+  confirm device identity after a manually-entered IP.
 - **Without an API key**, only basic room/valve data and boost control are
   available - no temperature/humidity/CO2/VOC/air-quality sensors and no
   ventilation profile control. This is a limitation of the device's v1 API,

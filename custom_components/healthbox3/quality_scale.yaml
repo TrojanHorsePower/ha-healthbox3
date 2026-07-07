@@ -75,13 +75,14 @@ rules:
     # config_flow's async_step_reauth/reauth_confirm, triggered by the
     # coordinator via ConfigEntry.async_start_reauth on a confirmed-invalid key.
   test-coverage: done
-    # Measured via pytest-cov: 95% line coverage (92 tests) across config
+    # Measured via pytest-cov: 95% line coverage (124 tests) across config
     # flow, coordinator, entities, diagnostics, real automation-engine
-    # dispatch, and the UDP discovery implementation (exercised through a
-    # fake datagram transport wired to the real _DiscoveryProtocol, not
-    # mocked past it). Remaining gaps are defensive except-branches that
-    # are inherently hard to trigger deliberately (malformed-shape parse
-    # failures on already-200-OK responses).
+    # dispatch, and the unicast and broadcast UDP discovery implementations
+    # (exercised through a fake datagram transport wired to the real
+    # _DiscoveryProtocol/_BroadcastDiscoveryProtocol, not mocked past it).
+    # Remaining gaps are defensive except-branches that are inherently hard
+    # to trigger deliberately (malformed-shape parse failures on
+    # already-200-OK responses).
 
   # Gold
   devices: done
@@ -93,10 +94,14 @@ rules:
   discovery-update-info: todo
     # api.py already implements unicast UDP discovery (async_discover), but it
     # isn't wired into a discovery/update flow yet - see docs known limitations.
-  discovery: todo
-    # Deliberately deferred: broadcast discovery was confirmed unreliable on
-    # the author's own network (see README known limitations); manual IP entry
-    # only for this release.
+  discovery: done
+    # The user step attempts UDP broadcast discovery (api.py's
+    # async_discover_broadcast) before showing any form, already-configured
+    # devices filtered out. Exactly one new device skips straight to a
+    # confirm step; multiple offer a selection list; zero (broadcast is
+    # confirmed unreliable on some networks - see README known limitations)
+    # falls through to manual IP entry with no error shown - a normal
+    # outcome, not a failure state.
   docs-data-update: done
     # README explains the v1/v2 poll behavior and interval.
   docs-examples: done
@@ -104,7 +109,8 @@ rules:
     # AQI-triggered boost-all, and time-based profile switching - real
     # automations against this integration's actual entities, not filler.
   docs-known-limitations: done
-    # README documents no-discovery and v1-only fallback behavior explicitly.
+    # README documents broadcast-discovery's unreliability/silent fallback
+    # to manual entry, and v1-only fallback behavior, explicitly.
   docs-supported-devices: done
     # README states this targets Healthbox 3.0 only.
   docs-supported-functions: done
