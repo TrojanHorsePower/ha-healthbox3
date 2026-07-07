@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   delivery is unreliable on some networks (AP client isolation, IGMP
   snooping, VLAN segmentation) - setup falls through to manual IP entry
   with no error shown, exactly as before.
+- After a manually-entered IP passes connectivity validation, setup makes
+  a best-effort attempt to also show a confirmation screen with the
+  device's MAC address and firmware version. If that probe doesn't
+  respond, setup continues straight on exactly as before - the device was
+  already verified reachable, so this is purely extra detail, never a
+  requirement.
 
 ## [0.1.2] - 2026-07-07
 
