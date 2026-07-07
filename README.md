@@ -85,7 +85,12 @@ search "Renson Healthbox 3".
    networks, see [Known limitations](#known-limitations) - enter the IP
    address or hostname manually instead. Either way, the integration
    validates connectivity by calling the device's basic (v1) API before
-   continuing.
+   continuing; for a manually-entered IP, it also makes a best-effort
+   unicast probe afterward to show a confirmation screen with the
+   device's MAC address and firmware version. If that probe doesn't
+   respond, setup continues straight on regardless - connectivity was
+   already verified by the required HTTP call, so this is purely extra
+   detail, never a requirement.
 2. **API key (optional).** You can stop here and use the integration with
    basic functionality, or unlock full sensor data and profile control -
    see below.
@@ -279,8 +284,7 @@ automatically once it's reachable again - no restart required.
   client isolation, IGMP snooping, or VLAN segmentation - it didn't work at
   all on the author's own network during development. When that happens,
   setup falls through to manual IP entry with no error shown; this is
-  expected, not a bug. A future release may also use unicast discovery to
-  confirm device identity after a manually-entered IP.
+  expected, not a bug.
 - **Without an API key**, only basic room/valve data and boost control are
   available - no temperature/humidity/CO2/VOC/air-quality sensors and no
   ventilation profile control. This is a limitation of the device's v1 API,
