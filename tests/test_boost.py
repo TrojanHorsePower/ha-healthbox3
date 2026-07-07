@@ -81,13 +81,19 @@ def test_percentage_to_level(percentage, expected_level):
 @pytest.mark.parametrize(
     ("timeout", "expected_preset"),
     [
+        (300, "5 min"),
+        (600, "10 min"),
         (900, "15 min"),
         (1800, "30 min"),
+        (2700, "45 min"),
         (3600, "1 hour"),
         (7200, "2 hours"),
-        (10800, "3 hours"),
+        (14400, "4 hours"),
+        (400, "5 min"),  # nearest to 300, not 600
         (1000, "15 min"),  # nearest to 900, not 1800
+        (2000, "30 min"),  # nearest to 1800, not 2700
         (5000, "1 hour"),  # nearest to 3600, not 7200
+        (10000, "2 hours"),  # nearest to 7200, not 14400
     ],
 )
 def test_preset_mode_for_timeout_snaps_to_nearest(timeout, expected_preset):
@@ -97,11 +103,14 @@ def test_preset_mode_for_timeout_snaps_to_nearest(timeout, expected_preset):
 @pytest.mark.parametrize(
     ("preset", "expected_timeout"),
     [
+        ("5 min", 300),
+        ("10 min", 600),
         ("15 min", 900),
         ("30 min", 1800),
+        ("45 min", 2700),
         ("1 hour", 3600),
         ("2 hours", 7200),
-        ("3 hours", 10800),
+        ("4 hours", 14400),
     ],
 )
 def test_timeout_for_preset_mode(preset, expected_timeout):
@@ -283,6 +292,40 @@ async def test_boost_fan_set_preset_mode_while_active_restarts(hass, mock_api_cl
     mock_api_client.async_set_boost.assert_awaited_once_with(
         1, enable=True, level=100.0, timeout=3600
     )
+
+
+@pytest.mark.parametrize(
+    ("preset_mode", "expected_timeout"),
+    [
+        ("5 min", 300),
+        ("4 hours", 14400),
+    ],
+)
+async def test_boost_fan_set_preset_mode_while_active_restarts_new_presets(
+    hass, mock_api_client, v1_data, caplog, preset_mode, expected_timeout
+):
+    active = _boost(True, level=100.0, timeout=900, remaining=300)
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v1_data.serial,
+        api_key=None,
+        healthbox_data=v1_data,
+        boost_status=active,
+    )
+
+    with caplog.at_level(logging.INFO, logger="custom_components.healthbox3.fan"):
+        await hass.services.async_call(
+            "fan",
+            "set_preset_mode",
+            {"entity_id": _ROOM1_ENTITY, "preset_mode": preset_mode},
+            blocking=True,
+        )
+
+    mock_api_client.async_set_boost.assert_awaited_once_with(
+        1, enable=True, level=100.0, timeout=expected_timeout
+    )
+    assert any("Restarting active boost" in r.message for r in caplog.records)
 
 
 async def test_boost_fan_restores_percentage_and_preset_mode_across_restart(

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Expanded the boost duration preset list from 5 options to 8: `5 min`,
+  `10 min`, `15 min`, `30 min`, `45 min`, `1 hour`, `2 hours`, `4 hours`
+  (previously `15 min`/`30 min`/`1 hour`/`2 hours`/`3 hours`). Still a
+  fixed preset list, not an arbitrary custom duration - 5 minutes is
+  also the shortest boost Renson's own app offers.
+
 ## [0.1.1] - 2026-07-06
 
 ### Changed

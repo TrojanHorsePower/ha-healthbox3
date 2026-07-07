@@ -165,8 +165,10 @@ The real, unscaled level (e.g. `"150%"`) is always shown as a `level`
 attribute on the entity, so you can see what the device actually received
 even though the slider itself reads a clean 0-100.
 
-**Duration is a preset picker**, not exact minutes: `15 min`, `30 min`,
-`1 hour`, `2 hours`, `3 hours`. Pick one from the fan's preset dropdown; it's
+**Duration is a preset picker**, not exact minutes: `5 min`, `10 min`,
+`15 min`, `30 min`, `45 min`, `1 hour`, `2 hours`, `4 hours` - a fixed list,
+not an arbitrary custom duration (5 minutes is also the shortest boost
+Renson's own app offers). Pick one from the fan's preset dropdown; it's
 converted to the device's native seconds-based timeout at the boundary.
 
 "Boost all" uses one shared percentage/preset applied to every room

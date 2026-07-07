@@ -49,14 +49,20 @@ BOOST_LEVEL_MIN = 10.0
 BOOST_LEVEL_MAX = 200.0
 
 # Boost duration is seconds on the wire; the fan entity exposes it as a
-# curated preset_mode list rather than exact-minute granularity. Order
-# matters: it defines the preset_mode option order shown in the UI.
+# curated preset_mode list rather than exact-minute granularity (a fixed
+# list, not arbitrary custom durations - accepted tradeoff for simplicity).
+# Order matters: it defines the preset_mode option order shown in the UI.
+# 5 min is the floor to match Renson's own app, which doesn't offer
+# anything shorter either.
 BOOST_DURATION_PRESETS: dict[str, int] = {
+    "5 min": 300,
+    "10 min": 600,
     "15 min": 900,
     "30 min": 1800,
+    "45 min": 2700,
     "1 hour": 3600,
     "2 hours": 7200,
-    "3 hours": 10800,
+    "4 hours": 14400,
 }
 
 # Fallback level/timeout when a room's own default_level/default_timeout is
