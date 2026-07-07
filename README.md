@@ -8,9 +8,9 @@
 [![hassfest](https://img.shields.io/github/actions/workflow/status/TrojanHorsePower/ha-healthbox3/hassfest.yml?label=hassfest)](https://github.com/TrojanHorsePower/ha-healthbox3/actions/workflows/hassfest.yml)
 
 A custom Home Assistant integration for the [Renson Healthbox
-3](https://www.renson.net/), a whole-house demand-controlled ventilation
-unit. It talks directly to the device over your local network - no cloud
-account required.
+3](https://renson.net/gd-gb/products/ventilation/healthbox), a whole-house
+demand-controlled ventilation unit. It talks directly to the device over
+your local network - no cloud account required.
 
 This is **not** the same product as Home Assistant core's built-in `renson`
 integration, which targets the unrelated Renson Endura Delta ventilation
