@@ -55,10 +55,12 @@ endorsement.
 - Automatic, silent reconnection if your Healthbox 3's IP address changes
   (e.g. a DHCP lease renewal) after setup - no notification, no action
   needed.
-- Demand control, minimum ventilation level, Breeze (temperature-triggered
-  night cooling), per-room CO2 threshold, and silent schedule controls -
-  all mirroring settings from Renson's own mobile app; only available with
-  an activated API key (see below).
+- Demand control, minimum ventilation level, Breeze's trigger temperature
+  (temperature-triggered night cooling), per-room CO2 threshold, and
+  silent schedule controls - all mirroring settings from Renson's own
+  mobile app; only available with an activated API key (see below). Breeze
+  itself can only be turned on/off from the Renson app or device, not from
+  Home Assistant - see [Known limitations](#known-limitations).
 
 ## Use cases
 
@@ -200,10 +202,9 @@ v1-only functionality and prompted you to reauthenticate with a new key.
 | `fan` | `<room> Boost` | Boost for that room - see "Boost control" below |
 | `fan` | `Boost all` | Boost for every room at once, at one shared level/duration - on only when every room currently reports boost enabled |
 | `switch` | `Demand control` | Toggle automatic (sensor-driven) ventilation on or off - requires an active API key |
-| `switch` | `Breeze` | Toggle temperature-triggered night cooling on or off - requires an active API key |
 | `switch` | `Silent` | Toggle the reduced-noise schedule on or off - requires an active API key |
 | `number` | `Minimum ventilation level` | Device-wide floor ventilation, 10-30% - requires an active API key |
-| `number` | `Breeze temperature` | Breeze's trigger average outdoor temperature, 15-35°C - requires an active API key |
+| `number` | `Breeze temperature` | Breeze's trigger average outdoor temperature, 15-35°C - requires an active API key; Breeze itself can't be turned on/off from here, see [Known limitations](#known-limitations) |
 | `number` | `<room> CO2 threshold` | CO2 concentration (ppm) that triggers this room's demand control - only created for rooms that support it, requires an active API key |
 | `number` | `Silent reduction` | Ventilation reduction while the silent schedule is active, 5-25% - requires an active API key |
 | `time` | `Silent start time` | Time of day the silent schedule starts, applied to every day of the week - requires an active API key, see [Known limitations](#known-limitations) |
@@ -351,6 +352,14 @@ automatically once it's reachable again - no restart required.
   control/minimum ventilation/Breeze/CO2 threshold/silent schedule
   entities. This is a limitation of the device's v1 API, not of this
   integration.
+- **Breeze (temperature-triggered night cooling) can't be turned on or off
+  from Home Assistant, only its trigger temperature can be adjusted.**
+  Earlier releases (up to 0.2.0) shipped a `Breeze` switch that did toggle
+  it, but neither Renson's mobile app nor its own device web UI ever
+  exposes an on/off control for Breeze (only the trigger temperature) -
+  the same restraint this integration already applies to `fire_protect`
+  and Qmin/Qnom/Offset. That switch has been removed; use the Renson app
+  or the device itself to turn Breeze on or off.
 - **API keys expire** after a multi-year period set by Renson, with no way
   for the device (or this integration) to detect the expiry date in
   advance. See [Getting an API key](#getting-an-api-key-optional-but-recommended)

@@ -30,6 +30,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   branding, replacing the placeholder generic ventilation-fan icon used
   since 0.1.0.
 
+### Removed
+
+- The `Breeze` switch, added in 0.2.0. Neither Renson's mobile app nor its
+  own device web UI ever exposes an on/off control for Breeze (only its
+  trigger temperature, which the `Breeze temperature` number entity still
+  controls) - the same restraint this integration already applies to
+  `fire_protect` and Qmin/Qnom/Offset. Use the Renson app or the device
+  itself to turn Breeze on or off. See
+  [Known limitations](README.md#known-limitations).
+
 ## [0.2.0] - 2026-07-09
 
 ### Added
