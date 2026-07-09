@@ -78,6 +78,29 @@ async def test_room_airflow_sensor_not_created_without_nominal_or_flow_rate(
     assert hass.states.get(f"sensor.{_PREFIX}_bathroom_airflow") is not None
 
 
+async def test_room_airflow_sensor_not_created_with_non_numeric_nominal(
+    hass, mock_api_client, v2_data, boost_status
+):
+    """A non-numeric nominal value (confirmed never seen on real hardware,
+    but not something the API schema actually rules out) must be treated
+    the same as a missing one - not created, not a crash.
+    """
+    stripped = copy.deepcopy(v2_data)
+    toilet = next(r for r in stripped.rooms if r.id == 1)
+    toilet.parameters["nominal"].value = "not-a-number"
+
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=stripped.serial,
+        healthbox_data=stripped,
+        boost_status=boost_status,
+    )
+
+    assert hass.states.get(f"sensor.{_PREFIX}_toilet_airflow") is None
+    assert hass.states.get(f"sensor.{_PREFIX}_bathroom_airflow") is not None
+
+
 async def test_global_aqi_sensor_has_main_pollutant_and_room_attributes(
     hass, mock_api_client, v2_data, boost_status
 ):

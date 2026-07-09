@@ -91,10 +91,27 @@ _GLOBAL_AQI_DISPLAY_PRECISION = 1
 _AIRFLOW_DISPLAY_PRECISION = 0
 
 
+def _as_float(value: bool | float | str | None) -> float | None:
+    """Narrow a Parameter's value to a float, or None if it isn't one.
+
+    Parameter.value is a bool/float/str/None union covering every
+    parameter type across the whole API - real hardware has only ever
+    sent a float for nominal/flow_rate specifically, but nothing in the
+    schema actually guarantees that. A graceful "treat it as not
+    reporting" fallback here, not a silent cast, matches how an empty/
+    unexpected CO2 reading is already treated as unavailable rather than
+    crashing - this project has been burned by "trust the device"
+    assumptions before (the profile index's cross-firmware convention
+    change, boost's restart-not-adjust behavior), so a real, if currently
+    theoretical, type mismatch here is worth handling the same way.
+    """
+    return value if isinstance(value, float) else None
+
+
 def _room_nominal_flow(room: Room) -> float | None:
     """Return a room's nominal (rated reference) flow rate in m3/h."""
     param = room.parameters.get("nominal")
-    return param.value if param is not None else None
+    return _as_float(param.value) if param is not None else None
 
 
 def _room_current_flow_rate(room: Room) -> float | None:
@@ -106,13 +123,18 @@ def _room_current_flow_rate(room: Room) -> float | None:
     `nominal` is scoped to the whole room rather than a specific valve -
     so if a room is ever fed by more than one valve, this combines their
     live flow rates against that single room-level reference instead of
-    silently reading only the first one found.
+    silently reading only the first one found. An actuator reporting a
+    non-numeric flow_rate is treated the same as one not reporting it at
+    all - skipped, not a reason to fail the whole room's reading.
     """
-    rates = [
-        actuator.parameters["flow_rate"].value
-        for actuator in room.actuators
-        if "flow_rate" in actuator.parameters
-    ]
+    rates: list[float] = []
+    for actuator in room.actuators:
+        parameter = actuator.parameters.get("flow_rate")
+        if parameter is None:
+            continue
+        rate = _as_float(parameter.value)
+        if rate is not None:
+            rates.append(rate)
     if not rates:
         return None
     return sum(rates)
