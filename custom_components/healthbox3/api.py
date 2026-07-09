@@ -6,7 +6,7 @@ import asyncio
 from dataclasses import dataclass, field
 import json
 import logging
-from typing import Any
+from typing import Any, override
 
 import aiohttp
 
@@ -432,10 +432,12 @@ class _DiscoveryProtocol(asyncio.DatagramProtocol):
     def __init__(self, response_future: asyncio.Future[bytes]) -> None:
         self._response_future = response_future
 
+    @override
     def datagram_received(self, data: bytes, addr: tuple[str, int]) -> None:
         if not self._response_future.done():
             self._response_future.set_result(data)
 
+    @override
     def error_received(self, exc: Exception) -> None:
         if not self._response_future.done():
             self._response_future.set_exception(exc)
@@ -491,9 +493,11 @@ class _BroadcastDiscoveryProtocol(asyncio.DatagramProtocol):
     def __init__(self) -> None:
         self.responses: list[bytes] = []
 
+    @override
     def datagram_received(self, data: bytes, addr: tuple[str, int]) -> None:
         self.responses.append(data)
 
+    @override
     def error_received(self, exc: Exception) -> None:
         _LOGGER.debug("Broadcast discovery socket error: %s", exc)
 

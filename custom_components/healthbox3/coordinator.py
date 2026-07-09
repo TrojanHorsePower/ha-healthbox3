@@ -6,6 +6,7 @@ import asyncio
 from dataclasses import dataclass, field
 from datetime import timedelta
 import logging
+from typing import override
 
 from homeassistant.config_entries import SOURCE_INTEGRATION_DISCOVERY, ConfigEntry
 from homeassistant.const import CONF_HOST
@@ -96,6 +97,12 @@ type Healthbox3ConfigEntry = ConfigEntry["Healthbox3DataUpdateCoordinator"]
 class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
     """Coordinator that polls `data/current`, using v2 if an API key is active."""
 
+    config_entry: Healthbox3ConfigEntry  # DataUpdateCoordinator itself types
+    # this ConfigEntry | None, since a coordinator can technically exist
+    # without one - ours is always constructed with a real entry (see
+    # __init__ below), so this narrows the type to match, the same idiom
+    # used throughout HA core integrations for the same situation.
+
     def __init__(
         self,
         hass: HomeAssistant,
@@ -121,6 +128,7 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
         )
         self._relocate_attempted = False
 
+    @override
     async def _async_update_data(self) -> Healthbox3Data:
         healthbox = await self._async_get_healthbox_data()
         boost = await self._async_get_boost_data(healthbox)
