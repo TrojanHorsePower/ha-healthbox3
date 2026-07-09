@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-09
+
+### ⚠️ Breaking changes
+
+- **The demand control switch's on/off meaning is now correct but
+  inverted from 0.2.0's buggy behavior.** If you have automations or
+  dashboards referencing this switch, check anything depending on its
+  state - this is the one that fails silently rather than obviously.
+- **The per-room CO2 threshold number now represents a different value
+  than before** (the device's `maximum` field, not `minimum`) - if you
+  have automations setting or reading this number, its meaning and
+  typical value have both changed.
+- **The `Breeze` switch has been removed.** Breeze can no longer be
+  turned on/off from Home Assistant, only its trigger temperature - use
+  the Renson app or the device itself for on/off.
+
 ### Added
 
 - Automatic reconnection after an IP change can now also be triggered by
@@ -176,7 +192,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   every push and pull request.
 - README "Use cases", "Examples", and "Troubleshooting" sections.
 
-[Unreleased]: https://github.com/TrojanHorsePower/ha-healthbox3/compare/0.2.0...HEAD
+[Unreleased]: https://github.com/TrojanHorsePower/ha-healthbox3/compare/0.3.0...HEAD
+[0.3.0]: https://github.com/TrojanHorsePower/ha-healthbox3/compare/0.2.0...0.3.0
 [0.2.0]: https://github.com/TrojanHorsePower/ha-healthbox3/compare/0.1.4...0.2.0
 [0.1.4]: https://github.com/TrojanHorsePower/ha-healthbox3/compare/0.1.3...0.1.4
 [0.1.3]: https://github.com/TrojanHorsePower/ha-healthbox3/compare/0.1.2...0.1.3
