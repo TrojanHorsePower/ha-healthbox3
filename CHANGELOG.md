@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   active network search - including for a device that's never connected
   successfully even once, which the active search alone couldn't help
   with.
+- Diagnostic firmware version sensor - requires an active API key.
 
 ### Changed
 

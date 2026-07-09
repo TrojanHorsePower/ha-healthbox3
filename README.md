@@ -34,6 +34,9 @@ endorsement.
 - A per-room airflow sensor, showing current airflow as a percentage of
   that room's rated (nominal) flow - not capped at 100%, since boost can
   push it well past nominal.
+- A diagnostic firmware version sensor - a concrete signal that a
+  firmware update happened, worth checking if anything undocumented
+  starts behaving differently. Only available with an activated API key.
 - A boost `fan` entity per room (plus one for all rooms at once), with
   percentage/preset controls and a real-level attribute - see
   [Boost control](#boost-control).
@@ -184,6 +187,7 @@ v1-only functionality and prompted you to reauthenticate with a new key.
 | `sensor` | `<room> Airflow` | Current airflow as % of that room's rated (nominal) flow; not capped at 100% - only created for rooms reporting both underlying values |
 | `sensor` | `Air quality index` | Whole-house AQI; exposes `main_pollutant` and `room` |
 | `sensor` | `Ventilation level` | Whole-house current ventilation level, as a percentage; not capped at 100% - requires an active API key |
+| `sensor` | `Firmware version` | The device's currently installed firmware version - diagnostic entity, requires an active API key |
 | `select` | `<room> Profile` | eco/health/intense - only created with an active API key |
 | `fan` | `<room> Boost` | Boost for that room - see "Boost control" below |
 | `fan` | `Boost all` | Boost for every room at once, at one shared level/duration - on only when every room currently reports boost enabled |
