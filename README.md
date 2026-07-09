@@ -18,9 +18,10 @@ unit and speaks a completely different API. This integration's domain is
 `healthbox3` and does not conflict with it.
 
 This is an unofficial, community-maintained integration, not affiliated
-with or endorsed by Renson. The icon shown for this integration is a
-generic ventilation-fan symbol, not Renson's actual logo or branding -
-using their real branding here could wrongly imply official endorsement.
+with or endorsed by Renson. The icon and logo shown for this integration
+are Renson's own Healthbox 3 branding, used to identify the product this
+integration connects to - not an indication of official support or
+endorsement.
 
 ## Features
 

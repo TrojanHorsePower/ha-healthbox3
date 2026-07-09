@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Switched the integration's icon and logo to Renson's own Healthbox 3
+  branding, replacing the placeholder generic ventilation-fan icon used
+  since 0.1.0.
+
 ## [0.2.0] - 2026-07-09
 
 ### Added

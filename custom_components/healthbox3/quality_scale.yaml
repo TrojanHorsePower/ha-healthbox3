@@ -7,12 +7,16 @@ rules:
     # DataUpdateCoordinator with a 30s default interval (const.DEFAULT_SCAN_INTERVAL).
   brands: done
     # Local brand images in custom_components/healthbox3/brand/ (icon.png,
-    # icon@2x.png, dark_icon.png, dark_icon@2x.png) - since HA 2026.3.0,
-    # custom integrations can ship these directly and take precedence over
-    # the brands repository, so a home-assistant/brands PR is no longer
-    # the path for this (confirmed against that repo's own README, which
-    # points integrations at this local mechanism instead). Deliberately a
-    # generic ventilation icon, not Renson's actual logo - see README.
+    # icon@2x.png, logo.png, logo@2x.png) - since HA 2026.3.0, custom
+    # integrations can ship these directly and take precedence over the
+    # brands repository, so a home-assistant/brands PR is no longer the
+    # path for this (confirmed against that repo's own README, which
+    # points integrations at this local mechanism instead). Renson's own
+    # Healthbox 3 branding, not a generic substitute - see README's
+    # non-affiliation disclaimer. No dark_icon/dark_logo variants shipped;
+    # HA falls back to the light variant for dark mode, which is an
+    # accepted, supported configuration per the local-brands mechanism,
+    # not a gap.
   common-modules: done
     # const.py, api.py, coordinator.py, entity.py are shared across platforms.
   config-flow-test-coverage: done
