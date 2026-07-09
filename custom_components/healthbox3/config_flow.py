@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 import logging
-from typing import Any
+from typing import Any, override
 
 import voluptuous as vol
 
@@ -95,6 +95,7 @@ class Healthbox3ConfigFlow(ConfigFlow, domain=DOMAIN):
         except (Healthbox3Error, OSError):
             return None
 
+    @override
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -117,6 +118,7 @@ class Healthbox3ConfigFlow(ConfigFlow, domain=DOMAIN):
                 step_id="user", data_schema=_MANUAL_HOST_SCHEMA, errors=errors
             )
 
+        assert self._host is not None  # set by _async_validate_host on success
         self._discovered_device = await self._async_try_unicast_discover(self._host)
         if self._discovered_device is not None:
             return await self.async_step_discovery_confirm()
@@ -155,6 +157,7 @@ class Healthbox3ConfigFlow(ConfigFlow, domain=DOMAIN):
         re-set).
         """
         device = self._discovered_device
+        assert device is not None  # always set before this step is reached
         errors: dict[str, str] = {}
         if user_input is not None:
             if self._host is None:
@@ -197,6 +200,7 @@ class Healthbox3ConfigFlow(ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured(updates={CONF_HOST: host}, error="relocated")
         return self.async_abort(reason="no_matching_entry")
 
+    @override
     async def async_step_integration_discovery(
         self, discovery_info: dict[str, Any]
     ) -> ConfigFlowResult:
@@ -211,6 +215,7 @@ class Healthbox3ConfigFlow(ConfigFlow, domain=DOMAIN):
         """
         return await self._async_relocate_or_abort(discovery_info[CONF_HOST])
 
+    @override
     async def async_step_dhcp(self, discovery_info: DhcpServiceInfo) -> ConfigFlowResult:
         """Silently relocate an existing entry to a new IP, triggered by
         Home Assistant's own passive DHCP discovery.
@@ -240,6 +245,8 @@ class Healthbox3ConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Ask for an optional API key and activate/verify it if given."""
+        assert self._host is not None  # set by _async_validate_host before this step
+        assert self._serial is not None  # set by _async_validate_host before this step
         errors: dict[str, str] = {}
         if user_input is not None:
             api_key = user_input.get(CONF_API_KEY) or None
@@ -341,6 +348,7 @@ class Healthbox3ConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Ask for a replacement API key."""
+        assert self._host is not None  # set by async_step_reauth just before this
         errors: dict[str, str] = {}
         if user_input is not None:
             api_key = user_input[CONF_API_KEY]
