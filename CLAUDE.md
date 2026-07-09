@@ -40,8 +40,8 @@ existing entry's host. A broadcast/unicast reply is good enough to
    description of what's in it>"` (e.g. `"Release 0.1.4: airflow sensor
    and automatic discovery-based reconnection"`).
 4. Tag that commit `X.Y.Z` - **no `v` prefix** (`0.1.4`, not `v0.1.4`).
-5. Push the commit and the tag, then confirm CI, HACS Validate, and
-   Validate with hassfest all show green **on that exact tagged commit**
+5. Push the commit and the tag, then confirm CI, HACS Validate, Validate
+   with hassfest, and mypy all show green **on that exact tagged commit**
    (not just "the workflows pass somewhere") before considering the
    release done.
 6. GitHub Release: title is just the version number, body is pulled

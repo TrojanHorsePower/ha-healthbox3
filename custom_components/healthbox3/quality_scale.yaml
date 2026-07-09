@@ -252,6 +252,29 @@ rules:
     # aiohttp is natively async; no sync dependency wrapped in an executor.
   inject-websession: done
     # Healthbox3ApiClient takes the shared session via async_get_clientsession(hass).
-  strict-typing: todo
-    # Type hints are used throughout, but the codebase hasn't been run through
-    # mypy --strict to confirm.
+  strict-typing: done
+    # mypy.ini holds the same flag set core applies to integrations listed
+    # in its own .strict-typing file - confirmed by reading a real core
+    # checkout's generated mypy.ini rather than assuming `mypy --strict`
+    # (broader, would over-report) is equivalent. Custom/HACS integrations
+    # have no equivalent opt-in mechanism, so this is this project's own
+    # self-verification, enforced in CI (see .github/workflows/mypy.yml).
+    # runtime-data's special condition (a custom typed ConfigEntry used
+    # throughout) was already satisfied before this rule was tackled -
+    # Healthbox3ConfigEntry has been used everywhere since it was
+    # introduced. The py.typed/PEP-561 note in this rule's docs is about
+    # a maintained typed dependency library, not the integration itself
+    # (confirmed against the rule's raw source text) - not applicable,
+    # this project has zero PyPI dependencies beyond aiohttp (see
+    # dependency-transparency above).
+    # Rolled out one file/group at a time across several commits ("git log
+    # --grep strict-typing"), each verified independently before the next.
+    # Genuine typing gaps found along the way, not just annotations:
+    # sensor.py's nominal/flow_rate parsing now handles a non-numeric
+    # value gracefully instead of assuming Parameter.value is always a
+    # float (see the dedicated commit for that fix); number.py's CO2
+    # threshold write and time.py's two silent-schedule writes read
+    # sibling state that's only guaranteed non-None because `available`
+    # already gates the call - documented with an assert at each site
+    # rather than restructured, since HA's own entity lifecycle is what
+    # actually enforces the invariant.

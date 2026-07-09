@@ -1,0 +1,41 @@
+name: mypy
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - ".gitignore"
+      - "LICENSE"
+      - "CLAUDE.md"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "CONTRIBUTING.md"
+  pull_request:
+    paths-ignore:
+      - ".gitignore"
+      - "LICENSE"
+      - "CLAUDE.md"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "CONTRIBUTING.md"
+
+jobs:
+  strict-typing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: "pip"
+          cache-dependency-path: requirements_test.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements_test.txt
+          pip install mypy
+
+      - name: mypy (strict-typing quality scale rule)
+        run: python -m mypy --config-file mypy.ini custom_components/healthbox3

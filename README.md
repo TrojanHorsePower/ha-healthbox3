@@ -6,6 +6,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/TrojanHorsePower/ha-healthbox3/ci.yml?label=CI)](https://github.com/TrojanHorsePower/ha-healthbox3/actions/workflows/ci.yml)
 [![HACS Validate](https://img.shields.io/github/actions/workflow/status/TrojanHorsePower/ha-healthbox3/hacs.yml?label=HACS%20Validate)](https://github.com/TrojanHorsePower/ha-healthbox3/actions/workflows/hacs.yml)
 [![hassfest](https://img.shields.io/github/actions/workflow/status/TrojanHorsePower/ha-healthbox3/hassfest.yml?label=hassfest)](https://github.com/TrojanHorsePower/ha-healthbox3/actions/workflows/hassfest.yml)
+[![mypy](https://img.shields.io/github/actions/workflow/status/TrojanHorsePower/ha-healthbox3/mypy.yml?label=mypy)](https://github.com/TrojanHorsePower/ha-healthbox3/actions/workflows/mypy.yml)
 
 A custom Home Assistant integration for the [Renson Healthbox
 3](https://renson.net/gd-gb/products/ventilation/healthbox), a whole-house
