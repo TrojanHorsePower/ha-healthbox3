@@ -187,6 +187,52 @@ async def test_room_decisions_fetch_failure_does_not_fail_whole_update(
     assert coordinator.data.room_decisions == {}
 
 
+async def test_v1_only_polling_never_fetches_firmware_version(hass, v1_data, boost_status):
+    entry = make_config_entry(hass, serial=v1_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v1_data_current.return_value = v1_data
+    client.async_get_boost.return_value = boost_status
+
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=False)
+    await coordinator.async_refresh()
+
+    client.async_get_firmware_version.assert_not_called()
+    assert coordinator.data.firmware_version is None
+
+
+async def test_v2_polling_fetches_firmware_version(
+    hass, v2_data, boost_status, firmware_version
+):
+    entry = make_config_entry(hass, serial=v2_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v2_data_current.return_value = v2_data
+    client.async_get_boost.return_value = boost_status
+    client.async_get_firmware_version.return_value = firmware_version
+
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=True)
+    await coordinator.async_refresh()
+
+    assert coordinator.data.firmware_version == firmware_version
+
+
+async def test_firmware_version_fetch_failure_does_not_fail_whole_update(
+    hass, v2_data, boost_status
+):
+    entry = make_config_entry(hass, serial=v2_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v2_data_current.return_value = v2_data
+    client.async_get_boost.return_value = boost_status
+    client.async_get_firmware_version.side_effect = api_mod.Healthbox3ConnectionError(
+        "offline"
+    )
+
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=True)
+    await coordinator.async_refresh()
+
+    assert coordinator.last_update_success is True
+    assert coordinator.data.firmware_version is None
+
+
 async def test_v2_polling_merges_boost_status(hass, v2_data, boost_status):
     entry = make_config_entry(hass, serial=v2_data.serial)
     client = AsyncMock(spec=api_mod.Healthbox3ApiClient)

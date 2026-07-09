@@ -12,6 +12,7 @@ import aiohttp
 
 from .const import (
     API_KEY_STATE_VALID,
+    API_RENSON_CORE_V2_GLOBAL,
     API_V1_BOOST,
     API_V1_DATA_CURRENT,
     API_V1_DECISION,
@@ -783,3 +784,22 @@ class Healthbox3ApiClient:
         ]
         payload = {"silent": {day: day_schedule for day in SILENT_WEEKDAYS}}
         await self._request("PUT", API_V1_DECISION, json=payload)
+
+    async def async_get_firmware_version(self) -> str:
+        """Fetch the device's current firmware version. Requires an active API key.
+
+        The real response also has MAC/IP/serial/warranty_number/datetime
+        keys - deliberately not parsed here, since MAC/serial/warranty are
+        already available (and already exposed) via DiscoveryInfo, and
+        IP/datetime aren't useful device-level information. Note the field
+        is literally `"firmware version"` (with a space) on this endpoint -
+        confirmed from a real capture - not `"Firmwareversion"` like the
+        unrelated discovery response uses for the same concept.
+        """
+        raw = await self._request("GET", API_RENSON_CORE_V2_GLOBAL)
+        try:
+            return raw["firmware version"]
+        except (KeyError, TypeError) as err:
+            raise Healthbox3InvalidResponseError(
+                "Unexpected renson_core/v2/global response shape"
+            ) from err

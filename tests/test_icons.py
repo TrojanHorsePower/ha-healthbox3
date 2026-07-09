@@ -23,7 +23,12 @@ ICONS_PATH = (
 # sensor.py/select.py/fan.py/switch.py/number.py/time.py - none of these
 # platforms expose an importable list of their entities' translation_keys,
 # unlike sensor.py's ROOM_SENSOR_META).
-EXTRA_SENSOR_KEYS = {"room_airflow", "global_aqi", "global_ventilation_level"}
+EXTRA_SENSOR_KEYS = {
+    "room_airflow",
+    "global_aqi",
+    "global_ventilation_level",
+    "firmware_version",
+}
 SELECT_KEYS = {"room_profile"}
 FAN_KEYS = {"room_boost", "boost_all"}
 SWITCH_KEYS = {"demand_control", "breeze", "silent"}

@@ -156,6 +156,20 @@ def room_decisions(room_decisions_raw) -> dict[int, api_mod.RoomDecision]:
 
 
 @pytest.fixture
+def renson_core_global_raw() -> dict:
+    """Raw JSON from a real device's /renson_core/v2/global, identifying
+    fields redacted.
+    """
+    return _load_fixture("renson-core-v2-global.json")
+
+
+@pytest.fixture
+def firmware_version(renson_core_global_raw) -> str:
+    """The firmware version string from the renson_core/v2/global fixture."""
+    return renson_core_global_raw["firmware version"]
+
+
+@pytest.fixture
 def mock_api_client():
     """Patch the API client used by __init__.py's async_setup_entry.
 
@@ -206,6 +220,7 @@ async def setup_integration(
     decision: api_mod.DeviceDecision | None = None,
     breeze: api_mod.BreezeSettings | None = None,
     room_decisions: dict[int, api_mod.RoomDecision] | None = None,
+    firmware_version: str | None = None,
 ) -> MockConfigEntry:
     """Create a config entry and run async_setup_entry against a mocked client.
 
@@ -241,6 +256,10 @@ async def setup_integration(
     if room_decisions is not None:
         mock_api_client.async_get_room_decisions = AsyncMock(
             return_value=room_decisions
+        )
+    if firmware_version is not None:
+        mock_api_client.async_get_firmware_version = AsyncMock(
+            return_value=firmware_version
         )
 
     await hass.config_entries.async_setup(entry.entry_id)

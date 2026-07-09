@@ -315,6 +315,23 @@ async def test_set_room_co2_threshold_sends_expected_payload():
     }
 
 
+async def test_get_firmware_version_parses_real_shape(renson_core_global_raw):
+    session = _FakeSession([_FakeResponse(200, json.dumps(renson_core_global_raw))])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    version = await client.async_get_firmware_version()
+
+    assert version == "2.6.9"
+
+
+async def test_get_firmware_version_rejects_unexpected_shape():
+    session = _FakeSession([_FakeResponse(200, json.dumps({"unexpected": "shape"}))])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    with pytest.raises(api_mod.Healthbox3InvalidResponseError):
+        await client.async_get_firmware_version()
+
+
 @pytest.mark.parametrize("status", [401, 403])
 async def test_auth_error_statuses_raise_authentication_error(status):
     session = _FakeSession([_FakeResponse(status)])

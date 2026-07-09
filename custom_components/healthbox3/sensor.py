@@ -10,7 +10,7 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.const import PERCENTAGE, UnitOfRatio, UnitOfTemperature
+from homeassistant.const import EntityCategory, PERCENTAGE, UnitOfRatio, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -184,6 +184,7 @@ async def async_setup_entry(
 
     if coordinator.use_v2:
         entities.append(Healthbox3GlobalVentilationLevelSensor(coordinator, serial))
+        entities.append(Healthbox3FirmwareVersionSensor(coordinator, serial))
 
     async_add_entities(entities)
 
@@ -405,3 +406,38 @@ class Healthbox3GlobalVentilationLevelSensor(Healthbox3Entity, SensorEntity):
         """Return the current whole-house ventilation level."""
         decision = self.coordinator.data.decision
         return decision.global_ventilation_level if decision is not None else None
+
+
+class Healthbox3FirmwareVersionSensor(Healthbox3Entity, SensorEntity):
+    """The device's currently installed firmware version.
+
+    Diagnostic rather than a primary measurement: this exists to give a
+    concrete, glanceable signal that a firmware update happened, since
+    several assumptions elsewhere in this client are only confirmed
+    against one specific firmware version (the room profile index's
+    encoding, the DHCP hostname pattern) and could plausibly change again
+    on a future update without any error - see RoomDecision's docstring
+    in api.py and async_step_dhcp's docstring in config_flow.py.
+    """
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "firmware_version"
+
+    def __init__(
+        self, coordinator: Healthbox3DataUpdateCoordinator, serial: str
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, serial)
+        self._attr_unique_id = f"{serial}_firmware_version"
+
+    @property
+    @override
+    def available(self) -> bool:
+        """Return whether the device's firmware version is known."""
+        return super().available and self.coordinator.data.firmware_version is not None
+
+    @property
+    @override
+    def native_value(self) -> str | None:
+        """Return the device's current firmware version."""
+        return self.coordinator.data.firmware_version

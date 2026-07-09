@@ -56,6 +56,7 @@ class Healthbox3Data:
     decision: DeviceDecision | None = None
     breeze: BreezeSettings | None = None
     room_decisions: dict[int, RoomDecision] = field(default_factory=dict)
+    firmware_version: str | None = None
 
 
 @dataclass
@@ -135,12 +136,14 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
         decision = await self._async_get_decision_data()
         breeze = await self._async_get_breeze_data()
         room_decisions = await self._async_get_room_decisions_data()
+        firmware_version = await self._async_get_firmware_version_data()
         return Healthbox3Data(
             healthbox=healthbox,
             boost=boost,
             decision=decision,
             breeze=breeze,
             room_decisions=room_decisions,
+            firmware_version=firmware_version,
         )
 
     async def _async_get_decision_data(self) -> DeviceDecision | None:
@@ -183,6 +186,18 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
         except Healthbox3Error as err:
             _LOGGER.debug("Failed to fetch room decision data: %s", err)
             return {}
+
+    async def _async_get_firmware_version_data(self) -> str | None:
+        """Fetch `/renson_core/v2/global`'s firmware version - same
+        gating/tolerance as decision/breeze/room_decisions.
+        """
+        if not self.use_v2:
+            return None
+        try:
+            return await self.client.async_get_firmware_version()
+        except Healthbox3Error as err:
+            _LOGGER.debug("Failed to fetch firmware version: %s", err)
+            return None
 
     async def _async_try_relocate(self) -> None:
         """Best-effort: if this entry's device is answering at a new IP

@@ -171,6 +171,58 @@ async def test_global_ventilation_level_sensor_unavailable_when_decision_fetch_f
     assert hass.states.get(f"sensor.{_PREFIX}_ventilation_level").state == "unavailable"
 
 
+async def test_firmware_version_sensor_reports_state(
+    hass, mock_api_client, v2_data, boost_status, firmware_version
+):
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v2_data.serial,
+        healthbox_data=v2_data,
+        boost_status=boost_status,
+        firmware_version=firmware_version,
+    )
+
+    state = hass.states.get(f"sensor.{_PREFIX}_firmware_version")
+    assert state is not None
+    assert state.state == "2.6.9"
+
+
+async def test_firmware_version_sensor_not_created_without_api_key(
+    hass, mock_api_client, v1_data, boost_status
+):
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v1_data.serial,
+        api_key=None,
+        healthbox_data=v1_data,
+        boost_status=boost_status,
+    )
+
+    assert hass.states.get(f"sensor.{_PREFIX}_firmware_version") is None
+
+
+async def test_firmware_version_sensor_unavailable_when_fetch_failed(
+    hass, mock_api_client, v2_data, boost_status, firmware_version
+):
+    entry = await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v2_data.serial,
+        healthbox_data=v2_data,
+        boost_status=boost_status,
+        firmware_version=firmware_version,
+    )
+    coordinator = entry.runtime_data
+
+    coordinator.data.firmware_version = None
+    coordinator.async_update_listeners()
+    await hass.async_block_till_done()
+
+    assert hass.states.get(f"sensor.{_PREFIX}_firmware_version").state == "unavailable"
+
+
 async def test_profile_select_reports_current_option(
     hass, mock_api_client, v2_data, boost_status
 ):

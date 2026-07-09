@@ -7,8 +7,8 @@ DOMAIN = "healthbox3"
 DEFAULT_SCAN_INTERVAL = timedelta(seconds=30)
 
 # Discovery (UDP broadcast/unicast on port 49152), documented in the
-# 3rd-party API PDF. Not used by the config flow yet (manual IP entry only)
-# but the client implements it for a future discovery step.
+# 3rd-party API PDF. Used by the config flow's automatic broadcast
+# discovery and the coordinator's relocate-on-connection-error probe.
 DISCOVERY_PORT = 49152
 DISCOVERY_MESSAGE = b"RENSON_DEVICE/JSON?"
 DISCOVERY_TIMEOUT = 5
@@ -82,6 +82,13 @@ SILENT_WEEKDAYS = [
     "saturday",
     "sunday",
 ]
+
+# Same undocumented/reverse-engineered status as API_V1_DECISION above -
+# a different namespace (/renson_core/v2/...) from the rest of the v1/v2
+# endpoints, but every probe so far has still been against a device with
+# an active API key, so gated the same way rather than assumed
+# key-independent.
+API_RENSON_CORE_V2_GLOBAL = "/renson_core/v2/global"
 
 API_KEY_STATE_VALID = "valid"
 API_KEY_STATE_EMPTY = "empty"

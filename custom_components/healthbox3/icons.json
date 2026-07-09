@@ -24,6 +24,9 @@
       },
       "global_ventilation_level": {
         "default": "mdi:weather-windy"
+      },
+      "firmware_version": {
+        "default": "mdi:chip"
       }
     },
     "select": {

@@ -82,6 +82,9 @@
       },
       "global_ventilation_level": {
         "name": "Ventilation level"
+      },
+      "firmware_version": {
+        "name": "Firmware version"
       }
     },
     "select": {
