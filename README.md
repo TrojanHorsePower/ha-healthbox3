@@ -363,12 +363,14 @@ a boost's percentage or preset while it's already running restarts its
 countdown from the new full duration rather than adjusting smoothly in
 place. See [Boost control](#boost-control) for the full explanation.
 
-**Entities disappeared after previously working (temperature/humidity/CO2/
-VOC/AQI sensors and the profile select specifically).** Check
-Settings → Devices & Services for a "reauthenticate" prompt on this
-integration - this is the expected result of an API key expiring or being
-revoked, not an error. Boost control keeps working in the meantime (see
-[Known limitations](#known-limitations)); reauthenticating with a new key
+**Entities disappeared after previously working** (any entity that
+requires an active API key - see [Known limitations](#known-limitations)
+for the full list: sensors beyond basic room/valve data, ventilation
+profile control, and the demand control/minimum ventilation/Breeze/CO2
+threshold/silent schedule entities). Check Settings → Devices & Services
+for a "reauthenticate" prompt on this integration - this is the expected
+result of an API key expiring or being revoked, not an error. Boost
+control keeps working in the meantime; reauthenticating with a new key
 restores the rest.
 
 ## Development

@@ -172,9 +172,18 @@ rules:
     # humidity/CO2/AQI) - deliberately left enabled: it's a direct way to
     # confirm whether boost is actually increasing flow, not just a nice-
     # to-have reading, and a user shouldn't need to already know it exists
-    # to enable it for that troubleshooting purpose. No other entity here
-    # is noisy or supplementary - all are primary measurements or primary
-    # interactive controls (same conclusion entity-category reached).
+    # to enable it for that troubleshooting purpose. No other primary
+    # sensor/control here is noisy or supplementary.
+    #
+    # The demand control/breeze/silent switches, minimum ventilation/
+    # breeze temperature/CO2 threshold/silent reduction numbers, and
+    # silent start/stop times (all EntityCategory.CONFIG - see
+    # entity-category above) were evaluated separately from that primary-
+    # entity reasoning, not swept in by it: a user who's gone to the
+    # trouble of activating an API key specifically to reach these
+    # settings wants them visible immediately, not hidden behind an extra
+    # "enable this entity" step - none are high-frequency, noisy, or
+    # genuinely optional in a way that would justify defaulting them off.
   entity-translations: done
     # strings.json/translations/en.json cover every entity's translation_key.
   exception-translations: done
