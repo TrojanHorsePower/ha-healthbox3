@@ -110,10 +110,11 @@ def boost_status(boost_raw) -> api_mod.BoostStatus:
 def decision_raw() -> dict:
     """Hand-built /v1/decision JSON, generic values.
 
-    Trimmed to just program/minimum/silent - the real response also has
-    room/breeze/profile/etc. keys that _parse_decision deliberately never
-    reads (see DeviceDecision's docstring), so a fixture including them
-    would only imply coverage this client doesn't actually have.
+    Trimmed to just program/minimum/global_ventilation_level/silent - the
+    real response also has room/breeze/profile/fire_protect/etc. keys
+    that _parse_decision deliberately never reads (see DeviceDecision's
+    docstring), so a fixture including them would only imply coverage
+    this client doesn't actually have.
     """
     return _load_fixture("v1-decision.json")
 

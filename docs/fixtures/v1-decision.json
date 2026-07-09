@@ -3,6 +3,7 @@
     "enable": false
   },
   "minimum": 20.0,
+  "global_ventilation_level": 45.0,
   "silent": {
     "enable": false,
     "reduction": 5.0,

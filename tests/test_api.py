@@ -127,15 +127,16 @@ async def test_set_profile_rejects_unknown_profile():
 
 
 def test_parse_decision_ignores_unread_keys(decision_raw):
-    """Confirms DeviceDecision only reads program.enable/minimum/silent -
-    the fixture has no room/breeze/profile/etc. keys at all (see
-    decision_raw's docstring), so this also implicitly confirms those
-    stay unparsed.
+    """Confirms DeviceDecision only reads program.enable/minimum/
+    global_ventilation_level/silent - the fixture has no room/breeze/
+    profile/fire_protect/etc. keys at all (see decision_raw's docstring),
+    so this also implicitly confirms those stay unparsed.
     """
     decision = api_mod._parse_decision(decision_raw)
 
     assert decision.program_enabled is False
     assert decision.global_minimum == 20.0
+    assert decision.global_ventilation_level == 45.0
     assert decision.silent.enable is False
     assert decision.silent.reduction == 5.0
     assert decision.silent.start_time == "22:00:00"
@@ -150,6 +151,7 @@ async def test_get_decision_parses_real_shape(decision_raw):
 
     assert decision.program_enabled is False
     assert decision.global_minimum == 20.0
+    assert decision.global_ventilation_level == 45.0
     assert decision.silent.enable is False
 
 

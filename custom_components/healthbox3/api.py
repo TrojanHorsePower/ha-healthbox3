@@ -179,20 +179,27 @@ class DeviceDecision:
     """Device-wide ventilation decision settings, from `/v1/decision`.
 
     The real response also has `room`, `breeze`, `profile`, `cdd_*`,
-    `cooking_hood`, `fire_protect`, and `global_ventilation_level` keys -
-    deliberately not parsed here. `room` in particular has a *different*,
-    incompatible shape for CO2 demand data than the dedicated
-    `/v2/decision/room` endpoint (confirmed on real hardware: same field
-    ends up as `offset`+`coefficients` here vs `minimum`+`maximum` there) -
+    `cooking_hood`, and `fire_protect` keys - deliberately not parsed
+    here. `room` in particular has a *different*, incompatible shape for
+    CO2 demand data than the dedicated `/v2/decision/room` endpoint
+    (confirmed on real hardware: same field ends up as
+    `offset`+`coefficients` here vs `minimum`+`maximum` there) -
     `/v2/decision/room` is what the device's own web UI actually reads and
     writes, so that's the only source ever used for room-level decision
     data in this client. `breeze` is likewise available here too, but
     `/v2/decision/breeze` is used instead to avoid maintaining two parsing
-    paths for the same setting.
+    paths for the same setting. `fire_protect` (`close`/`enable`/
+    `rel_hum_threshold`/`temp_threshold`) is deliberately never parsed or
+    exposed at all: it isn't surfaced anywhere in Renson's own app, which
+    is a meaningful signal it's internal/calibration-only or genuinely
+    risky to write to - `fire_protect.close` in particular reads as a
+    real physical safety interlock, not a setting worth exposing for the
+    sake of completeness.
     """
 
     program_enabled: bool
     global_minimum: float
+    global_ventilation_level: float
     silent: SilentSettings
 
 
@@ -200,6 +207,7 @@ def _parse_decision(raw: dict[str, Any]) -> DeviceDecision:
     return DeviceDecision(
         program_enabled=raw["program"]["enable"],
         global_minimum=raw["minimum"],
+        global_ventilation_level=raw["global_ventilation_level"],
         silent=_parse_silent(raw["silent"]),
     )
 
@@ -249,10 +257,14 @@ class RoomCO2Demand:
 class RoomDecision:
     """A single room's entry in `/v2/decision/room`.
 
-    The real per-room object also has minimum/nominal/offset/profile (an
-    index, not the string-based profile_name this client already writes
-    via /v2/api/data/current/room/{id}/profile_name) - deliberately not
-    parsed here.
+    The real per-room object also has minimum/nominal/offset (Qmin/Qnom/
+    Offset) and profile (an index, not the string-based profile_name this
+    client already writes via /v2/api/data/current/room/{id}/
+    profile_name) - deliberately not parsed here. Qmin/Qnom/Offset in
+    particular are never surfaced anywhere in Renson's own app, the same
+    signal that keeps DeviceDecision's fire_protect block untouched - not
+    worth the risk of writing to fields the vendor deliberately doesn't
+    expose to end users, for a feature nobody asked for.
     """
 
     co2: RoomCO2Demand

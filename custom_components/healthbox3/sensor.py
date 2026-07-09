@@ -159,6 +159,9 @@ async def async_setup_entry(
     if any(s.type == SENSOR_TYPE_GLOBAL_AQI for s in coordinator.data.healthbox.global_sensors):
         entities.append(Healthbox3GlobalAqiSensor(coordinator, serial))
 
+    if coordinator.use_v2:
+        entities.append(Healthbox3GlobalVentilationLevelSensor(coordinator, serial))
+
     async_add_entities(entities)
 
 
@@ -333,3 +336,39 @@ class Healthbox3GlobalAqiSensor(Healthbox3Entity, SensorEntity):
             if parameter is not None and parameter.value:
                 attributes[key] = str(parameter.value)
         return attributes or None
+
+
+class Healthbox3GlobalVentilationLevelSensor(Healthbox3Entity, SensorEntity):
+    """The whole-house current ventilation level, as a percentage.
+
+    Distinct from the `Minimum ventilation level` number entity (the
+    configured floor): this is the live aggregate figure, the whole-house
+    counterpart to each room's airflow sensor. Not necessarily 0-100
+    bounded - same reasoning as the per-room airflow sensor, so
+    device_class is left unset (none of the built-in SensorDeviceClass
+    members that accept a percentage unit fit a ventilation-level
+    reading regardless of its bounds).
+    """
+
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_translation_key = "global_ventilation_level"
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_suggested_display_precision = _AIRFLOW_DISPLAY_PRECISION
+
+    def __init__(
+        self, coordinator: Healthbox3DataUpdateCoordinator, serial: str
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, serial)
+        self._attr_unique_id = f"{serial}_global_ventilation_level"
+
+    @property
+    def available(self) -> bool:
+        """Return whether the device's decision data is known."""
+        return super().available and self.coordinator.data.decision is not None
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the current whole-house ventilation level."""
+        decision = self.coordinator.data.decision
+        return decision.global_ventilation_level if decision is not None else None

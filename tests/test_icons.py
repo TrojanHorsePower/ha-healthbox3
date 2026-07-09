@@ -20,10 +20,11 @@ ICONS_PATH = (
 )
 
 # Fixed translation_keys not derived from a shared data structure (see
-# sensor.py/select.py/fan.py - room_airflow and global_aqi are their own
-# entity classes rather than ROOM_SENSOR_META entries, and fan.py builds
-# its two entities directly rather than exposing an importable list).
-EXTRA_SENSOR_KEYS = {"room_airflow", "global_aqi"}
+# sensor.py/select.py/fan.py - room_airflow, global_aqi, and
+# global_ventilation_level are their own entity classes rather than
+# ROOM_SENSOR_META entries, and fan.py builds its two entities directly
+# rather than exposing an importable list).
+EXTRA_SENSOR_KEYS = {"room_airflow", "global_aqi", "global_ventilation_level"}
 SELECT_KEYS = {"room_profile"}
 FAN_KEYS = {"room_boost", "boost_all"}
 

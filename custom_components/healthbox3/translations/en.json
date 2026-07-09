@@ -79,6 +79,9 @@
       },
       "global_aqi": {
         "name": "Air quality index"
+      },
+      "global_ventilation_level": {
+        "name": "Ventilation level"
       }
     },
     "select": {
