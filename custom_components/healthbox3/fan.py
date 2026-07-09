@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any
+from typing import Any, override
 
 from homeassistant.components.fan import (
     ATTR_PERCENTAGE,
@@ -28,6 +28,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
+from .api import BoostStatus
 from .const import BOOST_DURATION_PRESETS, BOOST_LEVEL_MAX, BOOST_LEVEL_MIN, DOMAIN
 from .coordinator import (
     BoostParams,
@@ -182,16 +183,19 @@ class _Healthbox3BoostFan(Healthbox3Entity, RestoreEntity, FanEntity):
     # --- shared behavior ---
 
     @property
+    @override
     def available(self) -> bool:
         """Return whether this fan's underlying boost data was fetched."""
         return super().available and self._extra_available()
 
     @property
+    @override
     def is_on(self) -> bool | None:
         """Return whether boost is currently active."""
         return self._is_active()
 
     @property
+    @override
     def percentage(self) -> int:
         """Return the boost level rescaled to 0-100, or 0 if boost is off."""
         if not self._is_active():
@@ -199,11 +203,13 @@ class _Healthbox3BoostFan(Healthbox3Entity, RestoreEntity, FanEntity):
         return max(1, _level_to_percentage(self._params.level))
 
     @property
+    @override
     def preset_mode(self) -> str:
         """Return the curated duration preset closest to the desired timeout."""
         return _preset_mode_for_timeout(self._params.timeout)
 
     @property
+    @override
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return the real (unscaled) boost level and, if known, remaining time."""
         attrs: dict[str, Any] = {"level": f"{self._params.level:.0f}%"}
@@ -212,6 +218,7 @@ class _Healthbox3BoostFan(Healthbox3Entity, RestoreEntity, FanEntity):
             attrs["remaining"] = remaining
         return attrs
 
+    @override
     async def async_added_to_hass(self) -> None:
         """Restore the last set percentage/preset_mode across restarts."""
         await super().async_added_to_hass()
@@ -245,6 +252,7 @@ class _Healthbox3BoostFan(Healthbox3Entity, RestoreEntity, FanEntity):
             )
         await self._async_apply(True)
 
+    @override
     async def async_turn_on(
         self,
         percentage: int | None = None,
@@ -259,11 +267,13 @@ class _Healthbox3BoostFan(Healthbox3Entity, RestoreEntity, FanEntity):
             self._params.level = _percentage_to_level(percentage)
         await self._async_activate()
 
+    @override
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn boost off. Ventilation continues at the room's normal profile rate."""
         self._check_room_exists()
         await self._async_apply(False)
 
+    @override
     async def async_set_percentage(self, percentage: int) -> None:
         """Set the desired boost level (0 turns boost off)."""
         self._check_room_exists()
@@ -273,6 +283,7 @@ class _Healthbox3BoostFan(Healthbox3Entity, RestoreEntity, FanEntity):
         self._params.level = _percentage_to_level(percentage)
         await self._async_activate()
 
+    @override
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set the desired boost duration.
 
@@ -311,15 +322,18 @@ class Healthbox3RoomBoostFan(_Healthbox3BoostFan):
         )
         self._room_id = room_id
 
-    def _boost_status(self):
+    def _boost_status(self) -> BoostStatus | None:
         return self.coordinator.data.boost.get(self._room_id)
 
+    @override
     def _target_room_ids(self) -> list[int]:
         return [self._room_id]
 
+    @override
     def _is_active(self) -> bool:
         return _room_active(self.coordinator, self._room_id)
 
+    @override
     def _check_room_exists(self) -> None:
         if not room_exists(self.coordinator, self._room_id):
             raise HomeAssistantError(
@@ -328,13 +342,16 @@ class Healthbox3RoomBoostFan(_Healthbox3BoostFan):
                 translation_placeholders={"room_id": str(self._room_id)},
             )
 
+    @override
     def _remaining(self) -> int | None:
         status = self._boost_status()
         return status.remaining if status is not None else None
 
+    @override
     def _extra_available(self) -> bool:
         return self._boost_status() is not None
 
+    @override
     async def _async_apply(self, enable: bool) -> None:
         await self.coordinator.client.async_set_boost(
             self._room_id,
@@ -355,15 +372,19 @@ class Healthbox3AllBoostFan(_Healthbox3BoostFan):
     calling the per-room boost endpoint for every room.
     """
 
+    @override
     def _target_room_ids(self) -> list[int]:
         return [r.id for r in self.coordinator.data.healthbox.rooms]
 
+    @override
     def _is_active(self) -> bool:
         return _all_rooms_active(self.coordinator)
 
+    @override
     def _extra_available(self) -> bool:
         return bool(self.coordinator.data.boost)
 
+    @override
     async def _async_apply(self, enable: bool) -> None:
         room_ids = self._target_room_ids()
         results = await asyncio.gather(
