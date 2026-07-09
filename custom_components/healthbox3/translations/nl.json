@@ -1,0 +1,145 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Verbind met je Healthbox 3",
+        "description": "Geen apparaten automatisch gevonden - voer het IP-adres of de hostnaam van je Renson Healthbox 3 op je lokale netwerk in.",
+        "data": {
+          "host": "Host"
+        }
+      },
+      "discovery_select": {
+        "title": "Selecteer een Healthbox 3",
+        "description": "Er zijn meerdere apparaten gevonden op je netwerk. Selecteer degene die je wilt instellen.",
+        "data": {
+          "host": "Apparaat"
+        }
+      },
+      "discovery_confirm": {
+        "title": "Deze Healthbox 3 instellen?",
+        "description": "{description} gevonden (serienummer: {serial}) op {ip}."
+      },
+      "api_key": {
+        "title": "Optioneel: volledige sensordata ontgrendelen",
+        "description": "Zonder API-sleutel leest deze integratie alleen basisgegevens van ruimtes/kleppen en kan ze boost aansturen (v1 API). Om ook temperatuur-, vochtigheids-, CO2-, VOC- en luchtkwaliteitssensoren te krijgen, plus ventilatieprofielbesturing, neem contact op met de Renson-klantendienst en vraag een API-sleutel aan voor dit apparaat (serienummer: {serial}) - ze zullen vragen naar het serienummer en garantienummer. Heb je zelf al een sleutel rechtstreeks op het apparaat geactiveerd (bijvoorbeeld via de POST-opdracht uit Rensons documentatie)? Dan kun je dit veld leeg laten - activering gebeurt op het apparaat zelf, dus deze integratie detecteert dit automatisch. Laat dit anders leeg om zonder sleutel verder te gaan; je kunt later via Herconfigureren alsnog een sleutel toevoegen.",
+        "data": {
+          "api_key": "API-sleutel (optioneel)"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Opnieuw verifiëren voor Healthbox 3",
+        "description": "De API-sleutel voor deze Healthbox 3 is niet meer geldig (door Renson uitgegeven sleutels verlopen na enkele jaren). De integratie is intussen teruggevallen op enkel v1-functionaliteit. Voer een nieuwe sleutel in om toegang tot sensoren en profielen te herstellen.",
+        "data": {
+          "api_key": "API-sleutel"
+        }
+      },
+      "reconfigure": {
+        "title": "Healthbox 3 herconfigureren",
+        "description": "Werk het IP-adres en/of de API-sleutel van het apparaat bij. Laat de API-sleutel leeg om de reeds opgeslagen sleutel te behouden - deze wordt alleen gewijzigd als je een nieuwe intypt.",
+        "data": {
+          "host": "Host",
+          "api_key": "API-sleutel (optioneel)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Kan geen verbinding maken met het apparaat. Controleer het IP-adres en of het bereikbaar is op je netwerk.",
+      "invalid_api_key": "De API-sleutel werd geweigerd. Controleer de sleutel en of deze overeenkomt met het serienummer/garantienummer van dit apparaat.",
+      "unknown": "Onverwachte fout"
+    },
+    "abort": {
+      "already_configured": "Dit apparaat is al geconfigureerd",
+      "cannot_connect": "Kan geen verbinding maken met het apparaat.",
+      "no_matching_entry": "Geen bestaande Healthbox 3-configuratie komt overeen met dit apparaat.",
+      "reauth_successful": "Herverificatie geslaagd",
+      "reconfigure_successful": "Herconfiguratie geslaagd",
+      "relocated": "De verbindingsgegevens van dit apparaat zijn automatisch bijgewerkt nadat het op een nieuw netwerkadres werd gevonden.",
+      "unique_id_mismatch": "Dit IP-adres behoort tot een andere Healthbox 3 dan degene die wordt geherconfigureerd."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "room_temperature": {
+        "name": "{room_name} Temperatuur"
+      },
+      "room_humidity": {
+        "name": "{room_name} Vochtigheid"
+      },
+      "room_co2": {
+        "name": "{room_name} CO2"
+      },
+      "room_voc": {
+        "name": "{room_name} VOC"
+      },
+      "room_aqi": {
+        "name": "{room_name} Luchtkwaliteitsindex"
+      },
+      "room_airflow": {
+        "name": "{room_name} Luchtstroom"
+      },
+      "global_aqi": {
+        "name": "Luchtkwaliteitsindex"
+      },
+      "global_ventilation_level": {
+        "name": "Ventilatieniveau"
+      },
+      "firmware_version": {
+        "name": "Firmwareversie"
+      }
+    },
+    "select": {
+      "room_profile": {
+        "name": "{room_name} Profiel"
+      }
+    },
+    "fan": {
+      "room_boost": {
+        "name": "{room_name} Boost"
+      },
+      "boost_all": {
+        "name": "Boost alles"
+      }
+    },
+    "switch": {
+      "demand_control": {
+        "name": "Vraagsturing"
+      },
+      "breeze": {
+        "name": "Breeze"
+      },
+      "silent": {
+        "name": "Silent"
+      }
+    },
+    "number": {
+      "minimum_ventilation_level": {
+        "name": "Minimaal ventilatieniveau"
+      },
+      "breeze_temperature": {
+        "name": "Breeze-temperatuur"
+      },
+      "room_co2_threshold": {
+        "name": "{room_name} CO2-drempel"
+      },
+      "silent_reduction": {
+        "name": "Silent-reductie"
+      }
+    },
+    "time": {
+      "silent_start_time": {
+        "name": "Silent-starttijd"
+      },
+      "silent_stop_time": {
+        "name": "Silent-stoptijd"
+      }
+    }
+  },
+  "exceptions": {
+    "room_not_found": {
+      "message": "Ruimte {room_id} bestaat niet meer op dit Healthbox-apparaat."
+    },
+    "boost_partial_failure": {
+      "message": "Boost {action} mislukt voor ruimtes: {rooms}."
+    }
+  }
+}

@@ -4,6 +4,20 @@
 
 See the [README](README.md#development) for running the test suite locally.
 
+## Translations
+
+`custom_components/healthbox3/translations/` has `en.json` (source of
+truth, kept byte-identical to `strings.json` - see
+`tests/test_strings.py`), `nl.json` (reviewed by a native Dutch
+speaker), and `fr.json` (best-effort only, **not yet reviewed by a
+native French speaker** - treat any French PR review with extra
+scrutiny until someone fluent has checked it). Adding a new
+translatable string requires adding it to all four files with the same
+key structure (enforced by `tests/test_strings.py`), even if you can
+only provide the English text - a native speaker can fill in the rest
+later, an inconsistent key structure can't be caught automatically once
+it ships.
+
 ## Versioning
 
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)

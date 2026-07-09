@@ -1,0 +1,145 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connectez-vous à votre Healthbox 3",
+        "description": "Aucun appareil détecté automatiquement - entrez l'adresse IP ou le nom d'hôte de votre Renson Healthbox 3 sur votre réseau local.",
+        "data": {
+          "host": "Hôte"
+        }
+      },
+      "discovery_select": {
+        "title": "Sélectionnez une Healthbox 3",
+        "description": "Plusieurs appareils ont été détectés sur votre réseau. Sélectionnez celui à configurer.",
+        "data": {
+          "host": "Appareil"
+        }
+      },
+      "discovery_confirm": {
+        "title": "Configurer cette Healthbox 3 ?",
+        "description": "{description} détecté (numéro de série : {serial}) à {ip}."
+      },
+      "api_key": {
+        "title": "Optionnel : débloquer toutes les données des capteurs",
+        "description": "Sans clé API, cette intégration ne lit que les données de base des pièces/vannes et peut contrôler le boost (API v1). Pour obtenir également les capteurs de température, d'humidité, de CO2, de COV et de qualité de l'air, ainsi que le contrôle du profil de ventilation, contactez le support Renson et demandez une clé API pour cet appareil (numéro de série : {serial}) - ils demanderont le numéro de série et le numéro de garantie. Avez-vous déjà activé une clé directement sur l'appareil vous-même (par exemple via la commande POST de la documentation Renson) ? Vous pouvez laisser ce champ vide - l'activation se fait sur l'appareil lui-même, cette intégration la détectera donc automatiquement. Sinon, laissez ce champ vide pour continuer sans clé ; vous pourrez en ajouter une plus tard via Reconfigurer.",
+        "data": {
+          "api_key": "Clé API (optionnelle)"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Réauthentifier la Healthbox 3",
+        "description": "La clé API de cette Healthbox 3 n'est plus valide (les clés délivrées par Renson expirent après plusieurs années). L'intégration est entre-temps repassée en fonctionnement v1 uniquement. Entrez une nouvelle clé pour restaurer l'accès aux capteurs et aux profils.",
+        "data": {
+          "api_key": "Clé API"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigurer la Healthbox 3",
+        "description": "Mettez à jour l'adresse IP et/ou la clé API de l'appareil. Laissez la clé API vide pour conserver celle déjà enregistrée - elle n'est modifiée que si vous en saisissez une nouvelle.",
+        "data": {
+          "host": "Hôte",
+          "api_key": "Clé API (optionnelle)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Échec de la connexion à l'appareil. Vérifiez l'adresse IP et son accessibilité sur votre réseau.",
+      "invalid_api_key": "La clé API a été rejetée. Vérifiez la clé et qu'elle correspond bien au numéro de série/garantie de cet appareil.",
+      "unknown": "Erreur inattendue"
+    },
+    "abort": {
+      "already_configured": "Cet appareil est déjà configuré",
+      "cannot_connect": "Échec de la connexion à l'appareil.",
+      "no_matching_entry": "Aucune entrée Healthbox 3 existante ne correspond à cet appareil.",
+      "reauth_successful": "Réauthentification réussie",
+      "reconfigure_successful": "Reconfiguration réussie",
+      "relocated": "Les informations de connexion de cet appareil ont été mises à jour automatiquement après sa détection à une nouvelle adresse réseau.",
+      "unique_id_mismatch": "Cette adresse IP appartient à une Healthbox 3 différente de celle en cours de reconfiguration."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "room_temperature": {
+        "name": "{room_name} Température"
+      },
+      "room_humidity": {
+        "name": "{room_name} Humidité"
+      },
+      "room_co2": {
+        "name": "{room_name} CO2"
+      },
+      "room_voc": {
+        "name": "{room_name} COV"
+      },
+      "room_aqi": {
+        "name": "{room_name} Indice de qualité de l'air"
+      },
+      "room_airflow": {
+        "name": "{room_name} Débit d'air"
+      },
+      "global_aqi": {
+        "name": "Indice de qualité de l'air"
+      },
+      "global_ventilation_level": {
+        "name": "Niveau de ventilation"
+      },
+      "firmware_version": {
+        "name": "Version du firmware"
+      }
+    },
+    "select": {
+      "room_profile": {
+        "name": "{room_name} Profil"
+      }
+    },
+    "fan": {
+      "room_boost": {
+        "name": "{room_name} Boost"
+      },
+      "boost_all": {
+        "name": "Booster tout"
+      }
+    },
+    "switch": {
+      "demand_control": {
+        "name": "Contrôle à la demande"
+      },
+      "breeze": {
+        "name": "Breeze"
+      },
+      "silent": {
+        "name": "Silent"
+      }
+    },
+    "number": {
+      "minimum_ventilation_level": {
+        "name": "Niveau de ventilation minimum"
+      },
+      "breeze_temperature": {
+        "name": "Température Breeze"
+      },
+      "room_co2_threshold": {
+        "name": "{room_name} Seuil de CO2"
+      },
+      "silent_reduction": {
+        "name": "Réduction Silent"
+      }
+    },
+    "time": {
+      "silent_start_time": {
+        "name": "Heure de début Silent"
+      },
+      "silent_stop_time": {
+        "name": "Heure de fin Silent"
+      }
+    }
+  },
+  "exceptions": {
+    "room_not_found": {
+      "message": "La pièce {room_id} n'existe plus sur cet appareil Healthbox."
+    },
+    "boost_partial_failure": {
+      "message": "Échec de {action} du boost pour les pièces : {rooms}."
+    }
+  }
+}

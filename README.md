@@ -397,6 +397,14 @@ result of an API key expiring or being revoked, not an error. Boost
 control keeps working in the meantime; reauthenticating with a new key
 restores the rest.
 
+## Translations
+
+English, Dutch, and French are available (Renson is a Belgian
+manufacturer). **Dutch has been reviewed by a native speaker; French has
+not** - it's a best-effort translation only, and should be treated as
+less polished/trustworthy than the English or Dutch text until a native
+French speaker reviews it. Corrections are very welcome via PR.
+
 ## Development
 
 Tests use

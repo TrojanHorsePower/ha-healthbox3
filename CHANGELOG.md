@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   successfully even once, which the active search alone couldn't help
   with.
 - Diagnostic firmware version sensor - requires an active API key.
+- Dutch translation, reviewed by a native speaker. French translation,
+  best-effort only and not yet reviewed by a native speaker - see
+  [Translations](README.md#translations).
 
 ### Changed
 
