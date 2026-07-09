@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-09
+
 ### Added
 
 - Demand control switch, to toggle automatic (sensor-driven) ventilation
@@ -19,11 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CO2-triggered demand control.
 - Silent schedule switch, reduction number, and start/stop time entities,
   for the reduced-noise schedule.
-
-  All five require an active API key, the same as the ventilation profile
-  selector.
 - Whole-house ventilation level sensor, showing the current aggregate
-  ventilation level as a percentage - requires an active API key.
+  ventilation level as a percentage.
+
+  All six require an active API key, the same as the ventilation profile
+  selector.
 
 ### Changed
 
@@ -125,7 +127,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   every push and pull request.
 - README "Use cases", "Examples", and "Troubleshooting" sections.
 
-[Unreleased]: https://github.com/TrojanHorsePower/ha-healthbox3/compare/0.1.4...HEAD
+[Unreleased]: https://github.com/TrojanHorsePower/ha-healthbox3/compare/0.2.0...HEAD
+[0.2.0]: https://github.com/TrojanHorsePower/ha-healthbox3/compare/0.1.4...0.2.0
 [0.1.4]: https://github.com/TrojanHorsePower/ha-healthbox3/compare/0.1.3...0.1.4
 [0.1.3]: https://github.com/TrojanHorsePower/ha-healthbox3/compare/0.1.2...0.1.3
 [0.1.2]: https://github.com/TrojanHorsePower/ha-healthbox3/compare/0.1.1...0.1.2
