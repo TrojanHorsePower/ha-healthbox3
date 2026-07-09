@@ -197,6 +197,16 @@ class DeviceDecision:
     risky to write to - `fire_protect.close` in particular reads as a
     real physical safety interlock, not a setting worth exposing for the
     sake of completeness.
+
+    `program_enabled` is the raw `program.enable` field, deliberately
+    named after it rather than "demand_control_enabled": confirmed on
+    real hardware that this field tracks whether the clock/schedule
+    fallback program is active, the *opposite* concept from "demand
+    control is active" - a fresh `/v1/decision` fetch showed
+    `program.enable: false` while the Renson app displayed demand control
+    as ON at that same moment. switch.py's Healthbox3DemandControlSwitch
+    presents/writes this field's negation as "demand control", so this
+    raw value is intentionally never surfaced as-is.
     """
 
     program_enabled: bool
@@ -742,8 +752,15 @@ class Healthbox3ApiClient:
                 "Unexpected decision response shape"
             ) from err
 
-    async def async_set_demand_control(self, enable: bool) -> None:
-        """Enable/disable demand-controlled ventilation. Requires an active API key."""
+    async def async_set_program_enable(self, enable: bool) -> None:
+        """Set the device's raw `program.enable` field. Requires an active
+        API key.
+
+        Deliberately named after the raw field, not "demand control" -
+        see DeviceDecision.program_enabled's docstring for why callers
+        (switch.py's Healthbox3DemandControlSwitch) must pass the
+        negation of what they want "demand control" to mean.
+        """
         await self._request(
             "PUT", API_V1_DECISION, json={"program": {"enable": enable}}
         )

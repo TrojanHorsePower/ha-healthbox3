@@ -47,6 +47,14 @@ class Healthbox3DemandControlSwitch(Healthbox3Entity, SwitchEntity):
     device's own `/v1/decision` schema also supports a full per-weekday
     schedule for that fallback mode, deliberately not built here (not
     requested, and a much bigger feature than a simple toggle).
+
+    Presents/writes the negation of the raw `program.enable` field
+    (`DeviceDecision.program_enabled` / `async_set_program_enable`).
+    Confirmed on real hardware: a fresh `/v1/decision` fetch showed
+    `program.enable: false` while the Renson app displayed demand control
+    as ON at that same moment - `program.enable` tracks whether the
+    clock/schedule fallback is active, the opposite concept from "demand
+    control is active". See DeviceDecision.program_enabled's docstring.
     """
 
     _attr_translation_key = "demand_control"
@@ -68,20 +76,22 @@ class Healthbox3DemandControlSwitch(Healthbox3Entity, SwitchEntity):
     @property
     @override
     def is_on(self) -> bool | None:
-        """Return whether demand control is currently enabled."""
+        """Return whether demand control is currently enabled (the
+        negation of the raw `program.enable` field - see class docstring).
+        """
         decision = self.coordinator.data.decision
-        return decision.program_enabled if decision is not None else None
+        return not decision.program_enabled if decision is not None else None
 
     @override
     async def async_turn_on(self, **kwargs: Any) -> None:
-        """Enable demand control."""
-        await self.coordinator.client.async_set_demand_control(True)
+        """Enable demand control (writes program.enable=False)."""
+        await self.coordinator.client.async_set_program_enable(False)
         await self.coordinator.async_request_refresh()
 
     @override
     async def async_turn_off(self, **kwargs: Any) -> None:
-        """Disable demand control."""
-        await self.coordinator.client.async_set_demand_control(False)
+        """Disable demand control (writes program.enable=True)."""
+        await self.coordinator.client.async_set_program_enable(True)
         await self.coordinator.async_request_refresh()
 
 

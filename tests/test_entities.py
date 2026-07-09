@@ -385,7 +385,11 @@ async def test_demand_control_switch_reports_state(
 
     state = hass.states.get(f"switch.{_PREFIX}_demand_control")
     assert state is not None
-    assert state.state == "off"  # the fixture's program.enable is False
+    # The fixture's raw program.enable is False, but this switch presents
+    # the negation - confirmed on real hardware that program.enable false
+    # means demand control ON in the Renson app (see switch.py's
+    # Healthbox3DemandControlSwitch docstring).
+    assert state.state == "on"
 
 
 async def test_demand_control_switch_not_created_without_api_key(
@@ -406,6 +410,10 @@ async def test_demand_control_switch_not_created_without_api_key(
 async def test_demand_control_switch_turn_on_calls_api(
     hass, mock_api_client, v2_data, boost_status, device_decision
 ):
+    """Turning demand control ON writes program.enable=False - the
+    negated raw field (see switch.py's Healthbox3DemandControlSwitch
+    docstring).
+    """
     await setup_integration(
         hass,
         mock_api_client,
@@ -422,12 +430,16 @@ async def test_demand_control_switch_turn_on_calls_api(
         blocking=True,
     )
 
-    mock_api_client.async_set_demand_control.assert_awaited_once_with(True)
+    mock_api_client.async_set_program_enable.assert_awaited_once_with(False)
 
 
 async def test_demand_control_switch_turn_off_calls_api(
     hass, mock_api_client, v2_data, boost_status, device_decision
 ):
+    """Turning demand control OFF writes program.enable=True - the
+    negated raw field (see switch.py's Healthbox3DemandControlSwitch
+    docstring).
+    """
     await setup_integration(
         hass,
         mock_api_client,
@@ -444,7 +456,7 @@ async def test_demand_control_switch_turn_off_calls_api(
         blocking=True,
     )
 
-    mock_api_client.async_set_demand_control.assert_awaited_once_with(False)
+    mock_api_client.async_set_program_enable.assert_awaited_once_with(True)
 
 
 async def test_demand_control_switch_unavailable_when_decision_fetch_failed(

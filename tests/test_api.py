@@ -156,11 +156,14 @@ async def test_get_decision_parses_real_shape(decision_raw):
 
 
 @pytest.mark.parametrize("enable", [True, False])
-async def test_set_demand_control_sends_expected_payload(enable):
+async def test_set_program_enable_sends_expected_payload(enable):
+    """Raw client method - sends `program.enable` as-is, no negation.
+    Negation happens in switch.py's Healthbox3DemandControlSwitch, not here.
+    """
     session = _FakeSession([_FakeResponse(200, "")])
     client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
 
-    await client.async_set_demand_control(enable)
+    await client.async_set_program_enable(enable)
 
     method, url, kwargs = session.calls[0]
     assert method == "PUT"
