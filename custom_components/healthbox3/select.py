@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from typing import override
+
 from homeassistant.components.select import SelectEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from .api import Room
 from .const import DOMAIN, PROFILES
 from .coordinator import Healthbox3ConfigEntry, Healthbox3DataUpdateCoordinator
 from .entity import Healthbox3Entity
@@ -61,24 +64,27 @@ class Healthbox3ProfileSelect(Healthbox3Entity, SelectEntity):
         self._attr_translation_placeholders = {"room_name": room_name}
         self._attr_unique_id = f"{serial}_room{room_id}_profile"
 
-    def _room(self):
+    def _room(self) -> Room | None:
         return next(
             (r for r in self.coordinator.data.healthbox.rooms if r.id == self._room_id),
             None,
         )
 
     @property
+    @override
     def available(self) -> bool:
         """Return whether this room's profile is known."""
         room = self._room()
         return super().available and room is not None and room.profile_name is not None
 
     @property
+    @override
     def current_option(self) -> str | None:
         """Return the room's current ventilation profile."""
         room = self._room()
         return room.profile_name if room is not None else None
 
+    @override
     async def async_select_option(self, option: str) -> None:
         """Set the room's ventilation profile."""
         if self._room() is None:
