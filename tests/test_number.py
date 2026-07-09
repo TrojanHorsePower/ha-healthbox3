@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+import copy
+
+import pytest
+from homeassistant.exceptions import HomeAssistantError
+
 from .conftest import setup_integration
 
 # The device name ("Healthbox 3.0" in both fixtures) becomes an entity_id
@@ -225,6 +230,42 @@ async def test_room_co2_threshold_number_set_value_preserves_range_calls_api(
     mock_api_client.async_set_room_co2_threshold.assert_awaited_once_with(
         1, minimum=700.0, maximum=850.0
     )
+
+
+async def test_room_co2_threshold_number_guards_against_a_room_removed_from_the_device(
+    hass, mock_api_client, v2_data, boost_status, room_decisions
+):
+    """Confirmed on real hardware: acting on an unknown room id returns a
+    bare 500 with an empty body. room_decisions is a separate endpoint
+    from data/current's room list, so it can still report stale data for
+    a room that's since been removed - the entity must check the
+    coordinator's own room list before ever making that call, the same
+    guard boost and profile select already use.
+    """
+    entry = await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v2_data.serial,
+        healthbox_data=v2_data,
+        boost_status=boost_status,
+        room_decisions=room_decisions,
+    )
+    coordinator = entry.runtime_data
+
+    shrunk = copy.deepcopy(v2_data)
+    shrunk.rooms = [r for r in shrunk.rooms if r.id != 1]
+    coordinator.data.healthbox = shrunk
+    coordinator.async_update_listeners()
+    await hass.async_block_till_done()
+
+    entity_id = f"number.{_PREFIX}_toilet_co2_threshold"
+    with pytest.raises(HomeAssistantError):
+        await hass.services.async_call(
+            "number",
+            "set_value",
+            {"entity_id": entity_id, "value": 700},
+            blocking=True,
+        )
 
 
 async def test_room_co2_threshold_number_unavailable_when_room_decisions_fetch_failed(

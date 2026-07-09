@@ -5,6 +5,7 @@ from __future__ import annotations
 from homeassistant.components.number import NumberDeviceClass, NumberEntity
 from homeassistant.const import EntityCategory, PERCENTAGE, UnitOfRatio, UnitOfTemperature
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
@@ -13,13 +14,14 @@ from .const import (
     CO2_THRESHOLD_MAX,
     CO2_THRESHOLD_MIN,
     CO2_THRESHOLD_STEP,
+    DOMAIN,
     GLOBAL_MINIMUM_VENTILATION_MAX,
     GLOBAL_MINIMUM_VENTILATION_MIN,
     SILENT_REDUCTION_MAX,
     SILENT_REDUCTION_MIN,
 )
 from .coordinator import Healthbox3ConfigEntry, Healthbox3DataUpdateCoordinator
-from .entity import Healthbox3Entity
+from .entity import Healthbox3Entity, room_exists
 
 # Device-wide settings, changed rarely; nothing to throttle.
 PARALLEL_UPDATES = 0
@@ -177,6 +179,21 @@ class Healthbox3RoomCO2ThresholdNumber(Healthbox3Entity, NumberEntity):
         maximum-minimum range (the device's own web UI does the same -
         `maximum` isn't independently user-editable).
         """
+        if not room_exists(self.coordinator, self._room_id):
+            # Confirmed on real hardware: acting on an unknown room id
+            # returns a bare 500 with an empty body, indistinguishable
+            # from "device is broken" - check against the coordinator's
+            # own room list first rather than let that reach the device.
+            # `room_decisions` alone isn't a substitute for this: it's a
+            # separate endpoint (/v2/decision/room) from data/current's
+            # room list, with no guarantee it drops a room the moment
+            # that room disappears from data/current. Same guard boost
+            # (fan.py) and profile select (select.py) already use.
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="room_not_found",
+                translation_placeholders={"room_id": str(self._room_id)},
+            )
         co2 = self._co2()
         new_maximum = co2.maximum + (value - co2.minimum)
         await self.coordinator.client.async_set_room_co2_threshold(
