@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Automatic reconnection after an IP change can now also be triggered by
+  Home Assistant's own passive DHCP discovery, alongside the existing
+  active network search - including for a device that's never connected
+  successfully even once, which the active search alone couldn't help
+  with.
+
 ### Changed
 
 - Switched the integration's icon and logo to Renson's own Healthbox 3

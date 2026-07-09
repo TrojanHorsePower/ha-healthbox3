@@ -111,11 +111,14 @@ search "Renson Healthbox 3".
 ### Changing the IP address or API key later
 
 If your Healthbox 3 gets a new IP (e.g. a DHCP reassignment), you usually
-don't need to do anything: once the integration notices it can't reach
-the device anymore, it automatically tries to find it again on the
-network and reconnects on its own, silently, with no action needed and no
-notification shown. This only works for an entry that was already
-connected at least once - see [Known limitations](#known-limitations).
+don't need to do anything: the integration reconnects on its own,
+silently, with no action needed and no notification shown, via two
+independent paths. Once it notices it can't reach the device anymore, it
+actively searches the network for it; separately, Home Assistant's own
+passive DHCP discovery also recognizes the device and can trigger the
+same reconnect - including for an entry that's never connected
+successfully even once, which the active search alone can't help with.
+Neither is instant or guaranteed - see [Known limitations](#known-limitations).
 
 If it doesn't (or you'd rather fix it immediately instead of waiting),
 use **Settings → Devices & Services → Renson Healthbox 3 → Reconfigure**.
@@ -318,13 +321,16 @@ automatically once it's reachable again - no restart required.
   all on the author's own network during development. When that happens,
   setup falls through to manual IP entry with no error shown; this is
   expected, not a bug.
-- **Automatic reconnection after an IP change only applies once an entry
-  has connected successfully at least once.** If your Healthbox 3's IP is
-  already wrong the very first time you set up the integration (or it's
-  never successfully connected since), there's no running coordinator yet
-  to notice a failure and go looking for it - use Reconfigure (see
-  [Changing the IP address or API key later](#changing-the-ip-address-or-api-key-later))
-  or fix the address and retry setup instead.
+- **Automatic reconnection's active network search only applies once an
+  entry has connected successfully at least once.** If your Healthbox 3's
+  IP is already wrong the very first time you set up the integration,
+  there's no running coordinator yet to notice a failure and go looking
+  for it. Home Assistant's own passive DHCP discovery can still trigger a
+  reconnect independently of that (see
+  [Changing the IP address or API key later](#changing-the-ip-address-or-api-key-later)),
+  but it depends on Home Assistant actually observing a matching DHCP
+  lease event, which isn't instant or guaranteed - use Reconfigure or fix
+  the address and retry setup instead if you'd rather not wait.
 - **Without an API key**, only basic room/valve data and boost control are
   available - no temperature/humidity/CO2/VOC/air-quality/ventilation-level
   sensors, no ventilation profile control, and none of the demand
