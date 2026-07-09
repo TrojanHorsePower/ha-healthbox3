@@ -34,7 +34,6 @@ async def async_setup_entry(
     async_add_entities(
         [
             Healthbox3DemandControlSwitch(coordinator, serial),
-            Healthbox3BreezeSwitch(coordinator, serial),
             Healthbox3SilentSwitch(coordinator, serial),
         ]
     )
@@ -83,45 +82,6 @@ class Healthbox3DemandControlSwitch(Healthbox3Entity, SwitchEntity):
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Disable demand control."""
         await self.coordinator.client.async_set_demand_control(False)
-        await self.coordinator.async_request_refresh()
-
-
-class Healthbox3BreezeSwitch(Healthbox3Entity, SwitchEntity):
-    """Toggle Breeze (temperature-triggered night cooling) on or off."""
-
-    _attr_translation_key = "breeze"
-    _attr_entity_category = EntityCategory.CONFIG
-
-    def __init__(
-        self, coordinator: Healthbox3DataUpdateCoordinator, serial: str
-    ) -> None:
-        """Initialize the switch."""
-        super().__init__(coordinator, serial)
-        self._attr_unique_id = f"{serial}_breeze"
-
-    @property
-    @override
-    def available(self) -> bool:
-        """Return whether the device's breeze data is known."""
-        return super().available and self.coordinator.data.breeze is not None
-
-    @property
-    @override
-    def is_on(self) -> bool | None:
-        """Return whether Breeze is currently enabled."""
-        breeze = self.coordinator.data.breeze
-        return breeze.enable if breeze is not None else None
-
-    @override
-    async def async_turn_on(self, **kwargs: Any) -> None:
-        """Enable Breeze."""
-        await self.coordinator.client.async_set_breeze_enable(True)
-        await self.coordinator.async_request_refresh()
-
-    @override
-    async def async_turn_off(self, **kwargs: Any) -> None:
-        """Disable Breeze."""
-        await self.coordinator.client.async_set_breeze_enable(False)
         await self.coordinator.async_request_refresh()
 
 

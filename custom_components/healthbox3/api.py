@@ -219,19 +219,23 @@ class BreezeSettings:
     """Breeze (temperature-triggered night cooling) settings, from
     `/v2/decision/breeze`.
 
-    The real response also has `min_hold_time`/`ramp_time` (confirmed
-    present, both times in seconds) - internal tuning parameters, not
-    something a typical user would want to adjust, so deliberately not
-    parsed or exposed as entities.
+    The real response also has `enable`, `min_hold_time`, and `ramp_time`
+    - all deliberately not parsed or exposed. `enable` was originally
+    read/written by a switch entity, removed after confirming (both
+    against home_rest.js's configBreeze(), which only ever touches
+    `average_temp`, and against zero mentions of "breeze" anywhere in
+    either official Renson API PDF) that Breeze on/off is never surfaced
+    in any Renson-authored UI, the same signal that keeps fire_protect
+    and Qmin/Qnom/Offset unexposed - see CHANGELOG. `min_hold_time`/
+    `ramp_time` (confirmed present, both times in seconds) are internal
+    tuning parameters, not something a typical user would want to adjust.
     """
 
-    enable: bool
     average_temp: float
 
 
 def _parse_breeze(raw: dict[str, Any]) -> BreezeSettings:
     return BreezeSettings(
-        enable=raw["enable"],
         average_temp=raw["average_temp"],
     )
 
@@ -757,12 +761,6 @@ class Healthbox3ApiClient:
             raise Healthbox3InvalidResponseError(
                 "Unexpected breeze response shape"
             ) from err
-
-    async def async_set_breeze_enable(self, enable: bool) -> None:
-        """Enable/disable Breeze. Requires an active API key."""
-        await self._request(
-            "PUT", API_V2_DECISION_BREEZE, json={"enable": enable}
-        )
 
     async def async_set_breeze_temp(self, value: float) -> None:
         """Set Breeze's trigger average outdoor temperature. Requires an active API key."""

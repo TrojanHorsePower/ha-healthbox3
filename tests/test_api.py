@@ -239,7 +239,6 @@ async def test_set_silent_schedule_writes_every_weekday_uniformly():
 def test_parse_breeze(breeze_raw):
     breeze = api_mod._parse_breeze(breeze_raw)
 
-    assert breeze.enable is True
     assert breeze.average_temp == 30.0
 
 
@@ -249,21 +248,7 @@ async def test_get_breeze_parses_real_shape(breeze_raw):
 
     breeze = await client.async_get_breeze()
 
-    assert breeze.enable is True
     assert breeze.average_temp == 30.0
-
-
-@pytest.mark.parametrize("enable", [True, False])
-async def test_set_breeze_enable_sends_expected_payload(enable):
-    session = _FakeSession([_FakeResponse(200, "")])
-    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
-
-    await client.async_set_breeze_enable(enable)
-
-    method, url, kwargs = session.calls[0]
-    assert method == "PUT"
-    assert url.endswith("/v2/decision/breeze")
-    assert kwargs["json"] == {"enable": enable}
 
 
 async def test_set_breeze_temp_sends_expected_payload():

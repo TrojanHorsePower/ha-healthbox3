@@ -32,7 +32,7 @@ EXTRA_SENSOR_KEYS = {
 }
 SELECT_KEYS = {"room_profile"}
 FAN_KEYS = {"room_boost", "boost_all"}
-SWITCH_KEYS = {"demand_control", "breeze", "silent"}
+SWITCH_KEYS = {"demand_control", "silent"}
 NUMBER_KEYS = {
     "minimum_ventilation_level",
     "breeze_temperature",

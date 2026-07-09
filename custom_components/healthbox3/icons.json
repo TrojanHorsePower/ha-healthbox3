@@ -60,9 +60,6 @@
       "demand_control": {
         "default": "mdi:auto-mode"
       },
-      "breeze": {
-        "default": "mdi:weather-night"
-      },
       "silent": {
         "default": "mdi:sleep"
       }

@@ -107,9 +107,6 @@
       "demand_control": {
         "name": "Contrôle à la demande"
       },
-      "breeze": {
-        "name": "Breeze"
-      },
       "silent": {
         "name": "Silent"
       }

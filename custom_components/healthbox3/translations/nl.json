@@ -107,9 +107,6 @@
       "demand_control": {
         "name": "Vraagsturing"
       },
-      "breeze": {
-        "name": "Breeze"
-      },
       "silent": {
         "name": "Silent"
       }

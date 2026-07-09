@@ -87,7 +87,7 @@ rules:
     # config_flow's async_step_reauth/reauth_confirm, triggered by the
     # coordinator via ConfigEntry.async_start_reauth on a confirmed-invalid key.
   test-coverage: done
-    # Measured via pytest-cov: 97% line coverage (244 tests) across config
+    # Measured via pytest-cov: 96% line coverage (237 tests) across config
     # flow, coordinator, entities, diagnostics, real automation-engine
     # dispatch, and the unicast and broadcast UDP discovery implementations
     # (exercised through a fake datagram transport wired to the real
@@ -176,7 +176,7 @@ rules:
     # both boost fan entities are all primary measurements or primary
     # interactive controls - the whole reason a user installs this
     # integration - so none of those get a category. The demand control/
-    # breeze/silent switches, minimum ventilation/breeze temperature/CO2
+    # silent switches, minimum ventilation/breeze temperature/CO2
     # threshold/silent reduction numbers, and silent start/stop times are
     # all device *configuration* (how the device behaves, not something
     # to look at or act on day to day), so those all get
@@ -196,7 +196,7 @@ rules:
     # to enable it for that troubleshooting purpose. No other primary
     # sensor/control here is noisy or supplementary.
     #
-    # The demand control/breeze/silent switches, minimum ventilation/
+    # The demand control/silent switches, minimum ventilation/
     # breeze temperature/CO2 threshold/silent reduction numbers, and
     # silent start/stop times (all EntityCategory.CONFIG - see
     # entity-category above) were evaluated separately from that primary-
@@ -229,8 +229,8 @@ rules:
     # top-level "exceptions" key.
   icon-translations: done
     # icons.json covers every entity translation_key (all sensors, the
-    # profile select, both boost fans, and the demand control/breeze/
-    # silent switches, minimum ventilation/breeze temperature/CO2
+    # profile select, both boost fans, and the demand control/silent
+    # switches, minimum ventilation/breeze temperature/CO2
     # threshold/silent reduction numbers, and silent start/stop times).
     # Sensors with a matching HA device_class (temperature/humidity/CO2)
     # use its usual icon explicitly; the ones without one (VOC/AQI/
