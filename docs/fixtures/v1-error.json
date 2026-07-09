@@ -1,0 +1,16 @@
+[
+  {
+    "code": "E042",
+    "time": "2026-01-15T08:30:00Z",
+    "description": "Sensor fault in room 3",
+    "association_id": "abc123",
+    "severity": "critical"
+  },
+  {
+    "code": "W007",
+    "time": "2026-01-14T22:10:00Z",
+    "description": "Filter replacement recommended",
+    "association_id": "def456",
+    "severity": "warning"
+  }
+]

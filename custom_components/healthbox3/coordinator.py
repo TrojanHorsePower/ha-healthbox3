@@ -11,13 +11,14 @@ from typing import override
 from homeassistant.config_entries import SOURCE_INTEGRATION_DISCOVERY, ConfigEntry
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import discovery_flow
+from homeassistant.helpers import discovery_flow, issue_registry as ir
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import (
     BoostStatus,
     BreezeSettings,
     DeviceDecision,
+    DeviceError,
     Healthbox3ApiClient,
     Healthbox3AuthenticationError,
     Healthbox3ConnectionError,
@@ -39,6 +40,15 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+# Confirmed real values for DeviceError.severity - anything else falls
+# back to WARNING rather than raising, since a defensive default here is
+# safer than crashing a coordinator update over a device sending a
+# severity value nobody's seen it send before.
+_ERROR_SEVERITY: dict[str, ir.IssueSeverity] = {
+    "critical": ir.IssueSeverity.CRITICAL,
+    "warning": ir.IssueSeverity.WARNING,
+}
+
 
 @dataclass
 class Healthbox3Data:
@@ -57,6 +67,7 @@ class Healthbox3Data:
     breeze: BreezeSettings | None = None
     room_decisions: dict[int, RoomDecision] = field(default_factory=dict)
     firmware_version: str | None = None
+    errors: list[DeviceError] = field(default_factory=list)
 
 
 @dataclass
@@ -128,6 +139,7 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
             level=BOOST_FALLBACK_LEVEL, timeout=BOOST_FALLBACK_TIMEOUT
         )
         self._relocate_attempted = False
+        self._tracked_error_issue_ids: set[str] = set()
 
     @override
     async def _async_update_data(self) -> Healthbox3Data:
@@ -137,6 +149,8 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
         breeze = await self._async_get_breeze_data()
         room_decisions = await self._async_get_room_decisions_data()
         firmware_version = await self._async_get_firmware_version_data()
+        errors = await self._async_get_errors_data()
+        self._async_reconcile_error_issues(errors)
         return Healthbox3Data(
             healthbox=healthbox,
             boost=boost,
@@ -144,6 +158,7 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
             breeze=breeze,
             room_decisions=room_decisions,
             firmware_version=firmware_version,
+            errors=errors,
         )
 
     async def _async_get_decision_data(self) -> DeviceDecision | None:
@@ -198,6 +213,64 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
         except Healthbox3Error as err:
             _LOGGER.debug("Failed to fetch firmware version: %s", err)
             return None
+
+    async def _async_get_errors_data(self) -> list[DeviceError]:
+        """Fetch `/v1/error` - same gating/tolerance as room_decisions (a
+        list, so `[]` not `None` on failure/v1-only).
+        """
+        if not self.use_v2:
+            return []
+        try:
+            return await self.client.async_get_errors()
+        except Healthbox3Error as err:
+            _LOGGER.debug("Failed to fetch device errors: %s", err)
+            return []
+
+    def _async_reconcile_error_issues(self, errors: list[DeviceError]) -> None:
+        """Create a repair issue for each currently-reported device error,
+        and delete any previously-tracked issue whose error is no longer
+        present - self-healing, no user action required to dismiss one
+        that's resolved itself.
+
+        Deliberately `is_fixable=False`: DELETE /v1/error/clear (see
+        API_V1_ERROR's comment in const.py) is a bulk "clear everything"
+        action with no per-error variant, so wiring a "Fix" button to it
+        would risk dismissing unrelated errors alongside the one the user
+        meant to act on. Clearing stays a manual device/Renson-app
+        action; these issues exist purely to inform.
+
+        Keyed on `association_id` - its name strongly implies it's the
+        device's own per-fault correlation id, but this has never been
+        confirmed against a real populated response (see DeviceError's
+        docstring - /v1/error has only ever been observed empty). If that
+        assumption turns out wrong (e.g. two distinct faults somehow
+        share one association_id), the practical effect is at worst
+        under-reporting - one visible issue instead of two - not
+        anything dangerous.
+        """
+        current_issue_ids: set[str] = set()
+        for error in errors:
+            issue_id = f"device_error_{error.association_id}"
+            current_issue_ids.add(issue_id)
+            ir.async_create_issue(
+                self.hass,
+                DOMAIN,
+                issue_id,
+                is_fixable=False,
+                severity=_ERROR_SEVERITY.get(error.severity, ir.IssueSeverity.WARNING),
+                translation_key="device_error",
+                translation_placeholders={
+                    "code": error.code,
+                    "description": error.description,
+                    "time": error.time,
+                    "severity": error.severity,
+                },
+            )
+
+        for stale_issue_id in self._tracked_error_issue_ids - current_issue_ids:
+            ir.async_delete_issue(self.hass, DOMAIN, stale_issue_id)
+
+        self._tracked_error_issue_ids = current_issue_ids
 
     async def _async_try_relocate(self) -> None:
         """Best-effort: if this entry's device is answering at a new IP

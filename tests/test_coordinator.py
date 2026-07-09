@@ -5,6 +5,7 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, patch
 
 from homeassistant.config_entries import SOURCE_REAUTH
+from homeassistant.helpers import issue_registry as ir
 
 from custom_components.healthbox3 import api as api_mod
 from custom_components.healthbox3.const import DOMAIN
@@ -231,6 +232,137 @@ async def test_firmware_version_fetch_failure_does_not_fail_whole_update(
 
     assert coordinator.last_update_success is True
     assert coordinator.data.firmware_version is None
+
+
+async def test_v1_only_polling_never_fetches_errors(hass, v1_data, boost_status):
+    entry = make_config_entry(hass, serial=v1_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v1_data_current.return_value = v1_data
+    client.async_get_boost.return_value = boost_status
+
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=False)
+    await coordinator.async_refresh()
+
+    client.async_get_errors.assert_not_called()
+    assert coordinator.data.errors == []
+
+
+async def test_v2_polling_fetches_errors(hass, v2_data, boost_status, device_errors):
+    entry = make_config_entry(hass, serial=v2_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v2_data_current.return_value = v2_data
+    client.async_get_boost.return_value = boost_status
+    client.async_get_errors.return_value = device_errors
+
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=True)
+    await coordinator.async_refresh()
+
+    assert coordinator.data.errors == device_errors
+
+
+async def test_errors_fetch_failure_does_not_fail_whole_update(hass, v2_data, boost_status):
+    """Same tolerance as decision/breeze/room_decisions/firmware_version -
+    the fallback is `[]`, matching room_decisions' list/dict-tolerant
+    precedent since an error count of 0 is always a valid state.
+    """
+    entry = make_config_entry(hass, serial=v2_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v2_data_current.return_value = v2_data
+    client.async_get_boost.return_value = boost_status
+    client.async_get_errors.side_effect = api_mod.Healthbox3ConnectionError("offline")
+
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=True)
+    await coordinator.async_refresh()
+
+    assert coordinator.last_update_success is True
+    assert coordinator.data.errors == []
+
+
+async def test_device_error_creates_repair_issue(hass, v2_data, boost_status, device_errors):
+    entry = make_config_entry(hass, serial=v2_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v2_data_current.return_value = v2_data
+    client.async_get_boost.return_value = boost_status
+    client.async_get_errors.return_value = device_errors
+
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=True)
+    await coordinator.async_refresh()
+
+    registry = ir.async_get(hass)
+    critical = registry.async_get_issue(DOMAIN, "device_error_abc123")
+    warning = registry.async_get_issue(DOMAIN, "device_error_def456")
+
+    assert critical is not None
+    assert critical.severity is ir.IssueSeverity.CRITICAL
+    assert critical.is_fixable is False
+    assert critical.translation_key == "device_error"
+    assert critical.translation_placeholders == {
+        "code": "E042",
+        "description": "Sensor fault in room 3",
+        "time": "2026-01-15T08:30:00Z",
+        "severity": "critical",
+    }
+    assert warning is not None
+    assert warning.severity is ir.IssueSeverity.WARNING
+
+
+async def test_device_error_unknown_severity_falls_back_to_warning(hass, v2_data, boost_status):
+    entry = make_config_entry(hass, serial=v2_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v2_data_current.return_value = v2_data
+    client.async_get_boost.return_value = boost_status
+    client.async_get_errors.return_value = [
+        api_mod.DeviceError(
+            code="X1",
+            time="2026-01-15T08:30:00Z",
+            description="Unknown severity",
+            association_id="zzz",
+            severity="something-new",
+        )
+    ]
+
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=True)
+    await coordinator.async_refresh()
+
+    issue = ir.async_get(hass).async_get_issue(DOMAIN, "device_error_zzz")
+    assert issue is not None
+    assert issue.severity is ir.IssueSeverity.WARNING
+
+
+async def test_device_error_issue_deleted_when_error_disappears(
+    hass, v2_data, boost_status, device_errors
+):
+    entry = make_config_entry(hass, serial=v2_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v2_data_current.return_value = v2_data
+    client.async_get_boost.return_value = boost_status
+    client.async_get_errors.return_value = device_errors
+
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=True)
+    await coordinator.async_refresh()
+
+    registry = ir.async_get(hass)
+    assert registry.async_get_issue(DOMAIN, "device_error_abc123") is not None
+    assert registry.async_get_issue(DOMAIN, "device_error_def456") is not None
+
+    client.async_get_errors.return_value = [device_errors[0]]
+    await coordinator.async_refresh()
+
+    assert registry.async_get_issue(DOMAIN, "device_error_abc123") is not None
+    assert registry.async_get_issue(DOMAIN, "device_error_def456") is None
+
+
+async def test_no_device_errors_creates_no_repair_issues(hass, v2_data, boost_status):
+    entry = make_config_entry(hass, serial=v2_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v2_data_current.return_value = v2_data
+    client.async_get_boost.return_value = boost_status
+    client.async_get_errors.return_value = []
+
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=True)
+    await coordinator.async_refresh()
+
+    assert ir.async_get(hass).issues == {}
 
 
 async def test_v2_polling_merges_boost_status(hass, v2_data, boost_status):

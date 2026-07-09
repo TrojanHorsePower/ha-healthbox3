@@ -90,6 +90,17 @@ SILENT_WEEKDAYS = [
 # key-independent.
 API_RENSON_CORE_V2_GLOBAL = "/renson_core/v2/global"
 
+# Same undocumented/reverse-engineered status as API_V1_DECISION above.
+# Confirmed real shape from errors_rest.js ([{code, time, description,
+# association_id, severity}]) but never actually seen populated on real
+# hardware - only the empty-array case has been observed. The device
+# also exposes DELETE /v1/error/clear, deliberately not implemented here
+# at all: it's a bulk "clear everything" action with no per-error
+# variant, which doesn't map cleanly onto Home Assistant's naturally
+# per-issue repair model - clearing stays a manual device/Renson-app
+# action, see coordinator.py's issue-reconciliation docstring.
+API_V1_ERROR = "/v1/error"
+
 API_KEY_STATE_VALID = "valid"
 API_KEY_STATE_EMPTY = "empty"
 

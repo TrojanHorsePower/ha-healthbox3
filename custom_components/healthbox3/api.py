@@ -16,6 +16,7 @@ from .const import (
     API_V1_BOOST,
     API_V1_DATA_CURRENT,
     API_V1_DECISION,
+    API_V1_ERROR,
     API_V2_API_KEY,
     API_V2_API_KEY_STATUS,
     API_V2_DATA_CURRENT,
@@ -292,6 +293,38 @@ def _parse_room_decisions(raw: dict[str, Any]) -> dict[int, RoomDecision]:
             )
         )
     return result
+
+
+@dataclass
+class DeviceError:
+    """A single device-reported error/fault, from `/v1/error`.
+
+    Confirmed real shape from errors_rest.js - never actually seen
+    populated on real hardware, only the empty-array case has been
+    observed. `code`'s JSON type is unconfirmed (string vs number) - both
+    it and `association_id` are coerced to `str` here since neither is
+    ever compared or computed on, only displayed. `severity` is confirmed
+    to be either "critical" or "warning".
+    """
+
+    code: str
+    time: str  # ISO8601
+    description: str
+    association_id: str
+    severity: str
+
+
+def _parse_errors(raw: list[dict[str, Any]]) -> list[DeviceError]:
+    return [
+        DeviceError(
+            code=str(e["code"]),
+            time=e["time"],
+            description=e["description"],
+            association_id=str(e["association_id"]),
+            severity=e["severity"],
+        )
+        for e in raw
+    ]
 
 
 @dataclass
@@ -802,4 +835,19 @@ class Healthbox3ApiClient:
         except (KeyError, TypeError) as err:
             raise Healthbox3InvalidResponseError(
                 "Unexpected renson_core/v2/global response shape"
+            ) from err
+
+    async def async_get_errors(self) -> list[DeviceError]:
+        """Fetch and parse `/v1/error`. Requires an active API key.
+
+        No clear-errors method exists on this client - see API_V1_ERROR's
+        comment in const.py for why DELETE /v1/error/clear is
+        deliberately never called from here.
+        """
+        raw = await self._request("GET", API_V1_ERROR)
+        try:
+            return _parse_errors(raw)
+        except (KeyError, TypeError) as err:
+            raise Healthbox3InvalidResponseError(
+                "Unexpected error response shape"
             ) from err

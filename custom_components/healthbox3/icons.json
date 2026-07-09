@@ -27,6 +27,9 @@
       },
       "firmware_version": {
         "default": "mdi:chip"
+      },
+      "device_errors": {
+        "default": "mdi:alert-circle"
       }
     },
     "select": {

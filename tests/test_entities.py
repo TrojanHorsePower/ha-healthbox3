@@ -223,6 +223,77 @@ async def test_firmware_version_sensor_unavailable_when_fetch_failed(
     assert hass.states.get(f"sensor.{_PREFIX}_firmware_version").state == "unavailable"
 
 
+async def test_device_errors_sensor_reports_count(
+    hass, mock_api_client, v2_data, boost_status, device_errors
+):
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v2_data.serial,
+        healthbox_data=v2_data,
+        boost_status=boost_status,
+        errors=device_errors,
+    )
+
+    state = hass.states.get(f"sensor.{_PREFIX}_device_errors")
+    assert state is not None
+    assert state.state == "2"
+
+
+async def test_device_errors_sensor_reports_zero_and_stays_available_with_no_errors(
+    hass, mock_api_client, v2_data, boost_status
+):
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v2_data.serial,
+        healthbox_data=v2_data,
+        boost_status=boost_status,
+        errors=[],
+    )
+
+    state = hass.states.get(f"sensor.{_PREFIX}_device_errors")
+    assert state is not None
+    assert state.state == "0"
+    assert "code" not in state.attributes
+
+
+async def test_device_errors_sensor_attributes_reflect_most_recent_error(
+    hass, mock_api_client, v2_data, boost_status, device_errors
+):
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v2_data.serial,
+        healthbox_data=v2_data,
+        boost_status=boost_status,
+        errors=device_errors,
+    )
+
+    state = hass.states.get(f"sensor.{_PREFIX}_device_errors")
+    # device_errors fixture: E042 at 08:30 (2026-01-15) is later than W007
+    # at 22:10 (2026-01-14).
+    assert state.attributes["code"] == "E042"
+    assert state.attributes["description"] == "Sensor fault in room 3"
+    assert state.attributes["severity"] == "critical"
+    assert state.attributes["time"] == "2026-01-15T08:30:00Z"
+
+
+async def test_device_errors_sensor_not_created_without_api_key(
+    hass, mock_api_client, v1_data, boost_status
+):
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v1_data.serial,
+        api_key=None,
+        healthbox_data=v1_data,
+        boost_status=boost_status,
+    )
+
+    assert hass.states.get(f"sensor.{_PREFIX}_device_errors") is None
+
+
 async def test_profile_select_reports_current_option(
     hass, mock_api_client, v2_data, boost_status
 ):

@@ -28,6 +28,7 @@ EXTRA_SENSOR_KEYS = {
     "global_aqi",
     "global_ventilation_level",
     "firmware_version",
+    "device_errors",
 }
 SELECT_KEYS = {"room_profile"}
 FAN_KEYS = {"room_boost", "boost_all"}

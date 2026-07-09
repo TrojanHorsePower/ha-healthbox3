@@ -85,6 +85,9 @@
       },
       "firmware_version": {
         "name": "Firmwareversie"
+      },
+      "device_errors": {
+        "name": "Apparaatfouten"
       }
     },
     "select": {
@@ -140,6 +143,12 @@
     },
     "boost_partial_failure": {
       "message": "Boost {action} mislukt voor ruimtes: {rooms}."
+    }
+  },
+  "issues": {
+    "device_error": {
+      "title": "Healthbox meldde een {severity}-fout",
+      "description": "De Healthbox meldde een fout (code {code}): {description}\n\nGemeld om {time}. Dit kan niet vanuit Home Assistant worden gewist - gebruik de Renson-app of het apparaat zelf om dit te bevestigen of op te lossen. Dit issue verdwijnt automatisch zodra het apparaat dit niet langer meldt."
     }
   }
 }

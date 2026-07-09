@@ -85,6 +85,9 @@
       },
       "firmware_version": {
         "name": "Version du firmware"
+      },
+      "device_errors": {
+        "name": "Erreurs de l'appareil"
       }
     },
     "select": {
@@ -140,6 +143,12 @@
     },
     "boost_partial_failure": {
       "message": "Échec de {action} du boost pour les pièces : {rooms}."
+    }
+  },
+  "issues": {
+    "device_error": {
+      "title": "La Healthbox a signalé une erreur {severity}",
+      "description": "La Healthbox a signalé une erreur (code {code}) : {description}\n\nSignalée à {time}. Cela ne peut pas être effacé depuis Home Assistant - utilisez l'application Renson ou l'appareil lui-même pour la reconnaître ou la résoudre. Ce problème disparaîtra automatiquement dès que l'appareil ne le signalera plus."
     }
   }
 }

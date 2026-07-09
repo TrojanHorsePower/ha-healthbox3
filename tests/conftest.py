@@ -170,6 +170,24 @@ def firmware_version(renson_core_global_raw) -> str:
 
 
 @pytest.fixture
+def errors_raw() -> list[dict]:
+    """Hand-built /v1/error JSON, generic values.
+
+    Not a real capture - /v1/error has only ever been observed empty on
+    real hardware, so there's no real populated response to genericize
+    from. Matches errors_rest.js's confirmed real shape: two entries,
+    one of each confirmed severity value.
+    """
+    return _load_fixture("v1-error.json")
+
+
+@pytest.fixture
+def device_errors(errors_raw) -> list[api_mod.DeviceError]:
+    """Parsed device errors from the error fixture."""
+    return api_mod._parse_errors(errors_raw)
+
+
+@pytest.fixture
 def mock_api_client():
     """Patch the API client used by __init__.py's async_setup_entry.
 
@@ -221,6 +239,7 @@ async def setup_integration(
     breeze: api_mod.BreezeSettings | None = None,
     room_decisions: dict[int, api_mod.RoomDecision] | None = None,
     firmware_version: str | None = None,
+    errors: list[api_mod.DeviceError] | None = None,
 ) -> MockConfigEntry:
     """Create a config entry and run async_setup_entry against a mocked client.
 
@@ -261,6 +280,8 @@ async def setup_integration(
         mock_api_client.async_get_firmware_version = AsyncMock(
             return_value=firmware_version
         )
+    if errors is not None:
+        mock_api_client.async_get_errors = AsyncMock(return_value=errors)
 
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()

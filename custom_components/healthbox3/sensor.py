@@ -185,6 +185,7 @@ async def async_setup_entry(
     if coordinator.use_v2:
         entities.append(Healthbox3GlobalVentilationLevelSensor(coordinator, serial))
         entities.append(Healthbox3FirmwareVersionSensor(coordinator, serial))
+        entities.append(Healthbox3DeviceErrorsSensor(coordinator, serial))
 
     async_add_entities(entities)
 
@@ -441,3 +442,47 @@ class Healthbox3FirmwareVersionSensor(Healthbox3Entity, SensorEntity):
     def native_value(self) -> str | None:
         """Return the device's current firmware version."""
         return self.coordinator.data.firmware_version
+
+
+class Healthbox3DeviceErrorsSensor(Healthbox3Entity, SensorEntity):
+    """The number of device-reported errors currently active.
+
+    Complements, not replaces, the repair issues the coordinator creates
+    per error (see coordinator.py's _async_reconcile_error_issues):
+    repairs are for "needs your attention now" visibility in Settings ->
+    Repairs, this is passive, loggable/automatable visibility (e.g.
+    "notify me if this is ever above 0"). No device_class/unit fits a
+    proprietary error count, same reasoning as VOC/AQI/airflow.
+    """
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_translation_key = "device_errors"
+
+    def __init__(
+        self, coordinator: Healthbox3DataUpdateCoordinator, serial: str
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, serial)
+        self._attr_unique_id = f"{serial}_device_errors"
+
+    @property
+    @override
+    def native_value(self) -> int:
+        """Return the number of currently-active device errors."""
+        return len(self.coordinator.data.errors)
+
+    @property
+    @override
+    def extra_state_attributes(self) -> dict[str, str] | None:
+        """Return the most recent error's details, if any are active."""
+        errors = self.coordinator.data.errors
+        if not errors:
+            return None
+        latest = max(errors, key=lambda error: error.time)
+        return {
+            "code": latest.code,
+            "description": latest.description,
+            "severity": latest.severity,
+            "time": latest.time,
+        }

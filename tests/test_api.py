@@ -332,6 +332,45 @@ async def test_get_firmware_version_rejects_unexpected_shape():
         await client.async_get_firmware_version()
 
 
+async def test_get_errors_parses_real_shape(errors_raw):
+    session = _FakeSession([_FakeResponse(200, json.dumps(errors_raw))])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    errors = await client.async_get_errors()
+
+    assert errors == [
+        api_mod.DeviceError(
+            code="E042",
+            time="2026-01-15T08:30:00Z",
+            description="Sensor fault in room 3",
+            association_id="abc123",
+            severity="critical",
+        ),
+        api_mod.DeviceError(
+            code="W007",
+            time="2026-01-14T22:10:00Z",
+            description="Filter replacement recommended",
+            association_id="def456",
+            severity="warning",
+        ),
+    ]
+
+
+async def test_get_errors_handles_empty_list():
+    session = _FakeSession([_FakeResponse(200, json.dumps([]))])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    assert await client.async_get_errors() == []
+
+
+async def test_get_errors_rejects_unexpected_shape():
+    session = _FakeSession([_FakeResponse(200, json.dumps([{"unexpected": "shape"}]))])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    with pytest.raises(api_mod.Healthbox3InvalidResponseError):
+        await client.async_get_errors()
+
+
 @pytest.mark.parametrize("status", [401, 403])
 async def test_auth_error_statuses_raise_authentication_error(status):
     session = _FakeSession([_FakeResponse(status)])
