@@ -11,6 +11,7 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_API_KEY, CONF_HOST
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 
 from .api import (
     DiscoveryInfo,
@@ -172,23 +173,20 @@ class Healthbox3ConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_integration_discovery(
-        self, discovery_info: dict[str, Any]
-    ) -> ConfigFlowResult:
-        """Silently relocate an existing entry to a new IP.
+    async def _async_relocate_or_abort(self, host: str) -> ConfigFlowResult:
+        """Verify `host` via a real HTTP call and, if it matches an
+        existing entry's serial, relocate that entry there; otherwise
+        abort without creating anything.
 
-        Not real Home Assistant zeroconf/DHCP/etc. discovery - Healthbox 3
-        has no passive discovery protocol, only the active UDP broadcast
-        used elsewhere in this file. This step is only ever triggered
-        internally, by the coordinator (via
-        homeassistant.helpers.discovery_flow), after it has already
-        matched a broadcast response's serial against a specific existing
-        entry's own unique_id. It always resolves on this first step -
-        either `_abort_if_unique_id_configured` (which updates the
-        entry's host and schedules a reload) or an early abort - so it
-        never shows the user a form.
+        Shared body for every "an already-configured device might have
+        moved" trigger - internally-triggered broadcast relocate
+        (async_step_integration_discovery) and DHCP-triggered relocate
+        (async_step_dhcp) both resolve on their first step this way,
+        never showing the user a form. Deliberately never creates a new
+        entry for an unmatched serial - relocating a known device is a
+        different, narrower problem than discovering a new one, and both
+        callers are reached outside the normal new-device setup path.
         """
-        host = discovery_info[CONF_HOST]
         client = Healthbox3ApiClient(host, async_get_clientsession(self.hass))
         try:
             data = await client.async_get_v1_data_current()
@@ -198,6 +196,45 @@ class Healthbox3ConfigFlow(ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(data.serial)
         self._abort_if_unique_id_configured(updates={CONF_HOST: host}, error="relocated")
         return self.async_abort(reason="no_matching_entry")
+
+    async def async_step_integration_discovery(
+        self, discovery_info: dict[str, Any]
+    ) -> ConfigFlowResult:
+        """Silently relocate an existing entry to a new IP.
+
+        This step is only ever triggered internally, by the coordinator
+        (via homeassistant.helpers.discovery_flow), after it has already
+        matched a broadcast response's serial against a specific existing
+        entry's own unique_id. See async_step_dhcp for Home Assistant's
+        own DHCP-based discovery, a second, independent trigger for the
+        same underlying relocate.
+        """
+        return await self._async_relocate_or_abort(discovery_info[CONF_HOST])
+
+    async def async_step_dhcp(self, discovery_info: DhcpServiceInfo) -> ConfigFlowResult:
+        """Silently relocate an existing entry to a new IP, triggered by
+        Home Assistant's own passive DHCP discovery.
+
+        Healthbox 3 devices broadcast a DHCP hostname of the form
+        "HEALTHBOX3<serial>" (confirmed via HA's own DHCP integration
+        page on one real device, firmware 2.6.9) - matched here
+        hostname-only (manifest.json's "dhcp" key), deliberately never on
+        macaddress, since a device's MAC changes if it's ever moved
+        between WiFi and Ethernet while the hostname stays the same. Only
+        observed on one device/firmware version - not guaranteed
+        permanent across future Renson firmware updates (the same kind of
+        silent convention change already confirmed once for the room
+        profile index - see RoomDecision's docstring in api.py); worth
+        re-checking here first if DHCP-based reconnection ever seems to
+        stop working after a firmware update.
+
+        Deliberately scoped the same as async_step_integration_discovery:
+        relocates an existing entry if the confirmed serial matches one,
+        never creates a new entry for an unmatched serial. Extending DHCP
+        discovery to also drive first-time device setup is a separate,
+        not-yet-decided feature.
+        """
+        return await self._async_relocate_or_abort(discovery_info.ip)
 
     async def async_step_api_key(
         self, user_input: dict[str, Any] | None = None

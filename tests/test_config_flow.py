@@ -7,6 +7,7 @@ from dataclasses import replace
 from unittest.mock import AsyncMock, patch
 
 from homeassistant.config_entries import (
+    SOURCE_DHCP,
     SOURCE_INTEGRATION_DISCOVERY,
     SOURCE_REAUTH,
     SOURCE_RECONFIGURE,
@@ -14,6 +15,7 @@ from homeassistant.config_entries import (
 )
 from homeassistant.const import CONF_API_KEY, CONF_HOST
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 
 from custom_components.healthbox3 import api as api_mod
 from custom_components.healthbox3.const import DOMAIN
@@ -548,6 +550,82 @@ async def test_integration_discovery_no_matching_entry(hass, v1_data):
             DOMAIN,
             context={"source": SOURCE_INTEGRATION_DISCOVERY},
             data={CONF_HOST: "192.0.2.99"},
+        )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "no_matching_entry"
+    assert len(hass.config_entries.async_entries(DOMAIN)) == 0
+
+
+def _dhcp_discovery_info(*, ip: str) -> DhcpServiceInfo:
+    """HA lowercases the observed hostname before dispatch - see
+    config_flow.py's async_step_dhcp docstring - so this deliberately
+    uses lowercase, matching what a real DHCP-triggered flow would
+    actually receive rather than the device's real-world mixed-case
+    "HEALTHBOX3<serial>" hostname.
+    """
+    return DhcpServiceInfo(
+        ip=ip, hostname="healthbox3xxxxxxxxx", macaddress="aabbccddeeff"
+    )
+
+
+async def test_dhcp_discovery_relocates_existing_entry(hass, v1_data):
+    """Same underlying relocate as integration_discovery, triggered by
+    Home Assistant's own DHCP watcher instead of the coordinator.
+    """
+    entry = make_config_entry(hass, serial=v1_data.serial)
+    assert entry.data[CONF_HOST] == "192.0.2.1"
+
+    with _patch_client() as mock_cls:
+        instance = mock_cls.return_value
+        instance.async_get_v1_data_current = AsyncMock(return_value=v1_data)
+
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": SOURCE_DHCP},
+            data=_dhcp_discovery_info(ip="192.0.2.99"),
+        )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "relocated"
+    assert entry.data[CONF_HOST] == "192.0.2.99"
+
+
+async def test_dhcp_discovery_cannot_connect_leaves_entry_untouched(hass, v1_data):
+    entry = make_config_entry(hass, serial=v1_data.serial)
+
+    with _patch_client() as mock_cls:
+        instance = mock_cls.return_value
+        instance.async_get_v1_data_current = AsyncMock(
+            side_effect=api_mod.Healthbox3ConnectionError("no route")
+        )
+
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": SOURCE_DHCP},
+            data=_dhcp_discovery_info(ip="192.0.2.99"),
+        )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "cannot_connect"
+    assert entry.data[CONF_HOST] == "192.0.2.1"
+
+
+async def test_dhcp_discovery_no_matching_entry(hass, v1_data):
+    """No existing entry has this serial - nothing to relocate, and this
+    must not create a new entry either. DHCP discovery is deliberately
+    scoped to relocating already-known devices only, same as
+    integration_discovery - new-device setup via DHCP is a separate,
+    not-yet-decided feature.
+    """
+    with _patch_client() as mock_cls:
+        instance = mock_cls.return_value
+        instance.async_get_v1_data_current = AsyncMock(return_value=v1_data)
+
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": SOURCE_DHCP},
+            data=_dhcp_discovery_info(ip="192.0.2.99"),
         )
 
     assert result["type"] is FlowResultType.ABORT

@@ -24,8 +24,9 @@ rules:
     # invalid_api_key, duplicate-device abort, reauth (success + failure),
     # broadcast discovery (single/multiple/none/already-configured-filtered),
     # the post-manual-entry unicast enrichment probe (responds/no reply),
-    # and the internally-triggered relocate flow (integration_discovery:
-    # success, cannot_connect, no matching entry).
+    # and both relocate flows sharing _async_relocate_or_abort
+    # (integration_discovery and dhcp: success, cannot_connect, no
+    # matching entry, each).
   config-flow: done
     # config_flow.py with translated field descriptions in strings.json.
   dependency-transparency: done
@@ -86,7 +87,7 @@ rules:
     # config_flow's async_step_reauth/reauth_confirm, triggered by the
     # coordinator via ConfigEntry.async_start_reauth on a confirmed-invalid key.
   test-coverage: done
-    # Measured via pytest-cov: 96% line coverage (216 tests) across config
+    # Measured via pytest-cov: 96% line coverage (219 tests) across config
     # flow, coordinator, entities, diagnostics, real automation-engine
     # dispatch, and the unicast and broadcast UDP discovery implementations
     # (exercised through a fake datagram transport wired to the real
@@ -103,25 +104,39 @@ rules:
     # redacting serial/warranty/valve_warranty/host/api_key/MAC/IP and any
     # address or serial-embedded device-name fields the device may expose.
   discovery-update-info: done
-    # Healthbox 3 has no passive discovery protocol (no zeroconf/DHCP/SSDP),
-    # only the active UDP broadcast used by the `discovery` rule above, so
-    # this can't use the usual async_step_zeroconf-style dispatch. Instead:
-    # on a connection error, the coordinator makes one best-effort broadcast
-    # discovery attempt (not on every failed poll - once per outage, reset
-    # on the next successful poll) and, if a response's serial matches this
-    # entry's own unique_id at a different IP, triggers a real config flow
-    # (source integration_discovery, via homeassistant.helpers.discovery_flow)
-    # that re-validates via HTTP and then goes through the standard
-    # _abort_if_unique_id_configured(updates=...) path - the same mechanism
-    # the rule's own docs show for zeroconf/DHCP integrations, just
-    # internally triggered instead of passively dispatched. Confirmed via
-    # HA source that this resolves on the flow's first step (no form is
-    # ever shown), so it's a fully silent, invisible-to-the-user reconnect.
+    # Two independent, complementary triggers, both converging on
+    # ConfigFlow._async_relocate_or_abort (re-validate via HTTP, then the
+    # standard _abort_if_unique_id_configured(updates=...) path):
     #
-    # Deliberately not covered: an entry that has never successfully
-    # connected even once (stuck in SETUP_RETRY from initial setup) - no
-    # coordinator exists yet to trigger a relocate attempt in that case.
-    # See README "Known limitations".
+    # 1. On a connection error, the coordinator makes one best-effort
+    #    active UDP broadcast discovery attempt (not on every failed poll
+    #    - once per outage, reset on the next successful poll) and, if a
+    #    response's serial matches this entry's own unique_id at a
+    #    different IP, triggers a real config flow (source
+    #    integration_discovery, via homeassistant.helpers.discovery_flow).
+    # 2. Healthbox 3 devices also broadcast a DHCP hostname of the form
+    #    "HEALTHBOX3<serial>" - confirmed via HA's own DHCP integration
+    #    page on one real device (firmware 2.6.9), previously missed when
+    #    this entry was first written. manifest.json's "dhcp" key
+    #    (hostname-only match, deliberately never macaddress - a device's
+    #    MAC changes if it's ever moved between WiFi and Ethernet, the
+    #    hostname doesn't) dispatches Home Assistant's standard
+    #    async_step_dhcp for this, real passive discovery this time, not
+    #    internally triggered.
+    #
+    # Both resolve on their flow's first step (no form ever shown, a
+    # fully silent, invisible-to-the-user reconnect) and neither creates
+    # a new entry for an unmatched serial - relocating a known device is
+    # deliberately kept separate from discovering a new one.
+    #
+    # DHCP discovery closes the one gap broadcast-only relocate couldn't:
+    # an entry that has never successfully connected even once (stuck in
+    # SETUP_RETRY from initial setup) has no running coordinator to
+    # trigger a broadcast attempt, but async_step_dhcp fires from HA's own
+    # watcher regardless of any entry's state, the moment a matching
+    # device's next DHCP lease event is observed. Not instant or
+    # guaranteed (depends on that lease event actually happening), but no
+    # longer strictly uncovered - see README "Known limitations".
   discovery: done
     # The user step attempts UDP broadcast discovery (api.py's
     # async_discover_broadcast) before showing any form, already-configured
