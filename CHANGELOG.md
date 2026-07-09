@@ -40,6 +40,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   itself to turn Breeze on or off. See
   [Known limitations](README.md#known-limitations).
 
+### Fixed
+
+- **The per-room CO2 threshold number was reading and writing the wrong
+  field.** It showed and set `minimum`, but confirmed against a fresh
+  device capture cross-referenced with the Renson app, the app displays
+  and edits `maximum` - so the value shown/set in Home Assistant since
+  0.2.0 didn't match what the app showed, and editing it moved the wrong
+  end of the underlying range. Now reads/writes `maximum`, deriving
+  `minimum` to preserve the same span as before.
+- **The demand control switch was inverted.** It showed ON/OFF as the
+  raw `program.enable` device field, but confirmed against a fresh
+  device capture cross-referenced with the Renson app, `program.enable`
+  tracks the clock/schedule fallback being active - the opposite of
+  "demand control is active". The switch now presents and writes the
+  negation of that field, so its state matches the Renson app.
+
 ## [0.2.0] - 2026-07-09
 
 ### Added
