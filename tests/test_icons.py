@@ -20,13 +20,20 @@ ICONS_PATH = (
 )
 
 # Fixed translation_keys not derived from a shared data structure (see
-# sensor.py/select.py/fan.py - room_airflow, global_aqi, and
-# global_ventilation_level are their own entity classes rather than
-# ROOM_SENSOR_META entries, and fan.py builds its two entities directly
-# rather than exposing an importable list).
+# sensor.py/select.py/fan.py/switch.py/number.py/time.py - none of these
+# platforms expose an importable list of their entities' translation_keys,
+# unlike sensor.py's ROOM_SENSOR_META).
 EXTRA_SENSOR_KEYS = {"room_airflow", "global_aqi", "global_ventilation_level"}
 SELECT_KEYS = {"room_profile"}
 FAN_KEYS = {"room_boost", "boost_all"}
+SWITCH_KEYS = {"demand_control", "breeze", "silent"}
+NUMBER_KEYS = {
+    "minimum_ventilation_level",
+    "breeze_temperature",
+    "room_co2_threshold",
+    "silent_reduction",
+}
+TIME_KEYS = {"silent_start_time", "silent_stop_time"}
 
 
 def _load_icons() -> dict:
@@ -53,6 +60,21 @@ def test_select_icons_cover_every_translation_key():
 def test_fan_icons_cover_every_translation_key():
     actual = set(_load_icons()["entity"]["fan"])
     assert actual == FAN_KEYS
+
+
+def test_switch_icons_cover_every_translation_key():
+    actual = set(_load_icons()["entity"]["switch"])
+    assert actual == SWITCH_KEYS
+
+
+def test_number_icons_cover_every_translation_key():
+    actual = set(_load_icons()["entity"]["number"])
+    assert actual == NUMBER_KEYS
+
+
+def test_time_icons_cover_every_translation_key():
+    actual = set(_load_icons()["entity"]["time"])
+    assert actual == TIME_KEYS
 
 
 def test_every_icon_entry_has_a_default_mdi_icon():
