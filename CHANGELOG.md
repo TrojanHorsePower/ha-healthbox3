@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   successfully even once, which the active search alone couldn't help
   with.
 - Diagnostic firmware version sensor - requires an active API key.
+- Device-reported errors now create a Home Assistant repair issue
+  (Settings > Repairs), plus a diagnostic sensor with the current error
+  count and most recent error's details - requires an active API key.
+  Clearing an error still requires the Renson app or the device itself;
+  see [Known limitations](README.md#known-limitations).
 - Dutch translation, reviewed by a native speaker. French translation,
   best-effort only and not yet reviewed by a native speaker - see
   [Translations](README.md#translations).

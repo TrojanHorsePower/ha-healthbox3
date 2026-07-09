@@ -37,6 +37,13 @@ endorsement.
 - A diagnostic firmware version sensor - a concrete signal that a
   firmware update happened, worth checking if anything undocumented
   starts behaving differently. Only available with an activated API key.
+- Device-reported error/fault surfacing - each error the Healthbox itself
+  reports (e.g. a sensor fault) creates a Home Assistant repair issue
+  (**Settings > Repairs**) so it's not something you'd only notice by
+  opening Renson's own app, plus a diagnostic sensor with the current
+  error count for automations/history. Only available with an activated
+  API key; see [Known limitations](#known-limitations) for how clearing
+  works.
 - A boost `fan` entity per room (plus one for all rooms at once), with
   percentage/preset controls and a real-level attribute - see
   [Boost control](#boost-control).
@@ -188,6 +195,7 @@ v1-only functionality and prompted you to reauthenticate with a new key.
 | `sensor` | `Air quality index` | Whole-house AQI; exposes `main_pollutant` and `room` |
 | `sensor` | `Ventilation level` | Whole-house current ventilation level, as a percentage; not capped at 100% - requires an active API key |
 | `sensor` | `Firmware version` | The device's currently installed firmware version - diagnostic entity, requires an active API key |
+| `sensor` | `Device errors` | Count of currently-active device-reported errors, plus the most recent one's details as attributes - diagnostic entity, requires an active API key; each active error also creates a repair issue (**Settings > Repairs**) |
 | `select` | `<room> Profile` | eco/health/intense - only created with an active API key |
 | `fan` | `<room> Boost` | Boost for that room - see "Boost control" below |
 | `fan` | `Boost all` | Boost for every room at once, at one shared level/duration - on only when every room currently reports boost enabled |
@@ -358,6 +366,14 @@ automatically once it's reachable again - no restart required.
   that one shared pair - your existing per-day customization is not
   preserved. If you rely on different silent hours per day, don't use
   these two time entities.
+- **Device-reported errors can't be cleared from Home Assistant.** The
+  device only exposes a bulk "clear everything" action, with no way to
+  acknowledge a single error - wiring that up to a repair issue's "Fix"
+  button would risk dismissing unrelated errors alongside the one you
+  meant to act on. Use the Renson app or the device itself to acknowledge
+  or resolve an error; the repair issue and the `Device errors` sensor
+  both disappear/update automatically once the device stops reporting it,
+  no Home Assistant-side action needed either way.
 
 ## Troubleshooting
 
@@ -386,6 +402,12 @@ the level or duration.** Not a bug - confirmed on real hardware, changing
 a boost's percentage or preset while it's already running restarts its
 countdown from the new full duration rather than adjusting smoothly in
 place. See [Boost control](#boost-control) for the full explanation.
+
+**Settings > Repairs shows a "Healthbox reported a ... error" issue.** This
+is the device itself reporting a fault (e.g. a sensor problem), surfaced
+as-is - not something this integration detected or can diagnose further.
+See [Known limitations](#known-limitations) above for why it can't be
+cleared from Home Assistant.
 
 **Entities disappeared after previously working** (any entity that
 requires an active API key - see [Known limitations](#known-limitations)
