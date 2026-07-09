@@ -2,7 +2,21 @@ name: HACS Validate
 
 on:
   push:
+    paths-ignore:
+      - ".gitignore"
+      - "LICENSE"
+      - "CLAUDE.md"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "CONTRIBUTING.md"
   pull_request:
+    paths-ignore:
+      - ".gitignore"
+      - "LICENSE"
+      - "CLAUDE.md"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "CONTRIBUTING.md"
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch:

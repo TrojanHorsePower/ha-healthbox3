@@ -52,6 +52,141 @@ async def test_v1_only_polling_skips_v2(hass, v1_data, boost_status):
     assert len(coordinator.data.boost) == 7
 
 
+async def test_v1_only_polling_never_fetches_decision(hass, v1_data, boost_status):
+    """No independent evidence /v1/decision works without an active API
+    key - never even attempted in v1-only mode, matching const.py's
+    API_V1_DECISION comment.
+    """
+    entry = make_config_entry(hass, serial=v1_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v1_data_current.return_value = v1_data
+    client.async_get_boost.return_value = boost_status
+
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=False)
+    await coordinator.async_refresh()
+
+    client.async_get_decision.assert_not_called()
+    assert coordinator.data.decision is None
+
+
+async def test_v2_polling_fetches_decision(hass, v2_data, boost_status, device_decision):
+    entry = make_config_entry(hass, serial=v2_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v2_data_current.return_value = v2_data
+    client.async_get_boost.return_value = boost_status
+    client.async_get_decision.return_value = device_decision
+
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=True)
+    await coordinator.async_refresh()
+
+    assert coordinator.data.decision == device_decision
+
+
+async def test_decision_fetch_failure_does_not_fail_whole_update(hass, v2_data, boost_status):
+    """A decision-fetch failure means the entities built on it go
+    unavailable, not that the whole coordinator update fails - matching
+    how a single room's boost failure is tolerated.
+    """
+    entry = make_config_entry(hass, serial=v2_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v2_data_current.return_value = v2_data
+    client.async_get_boost.return_value = boost_status
+    client.async_get_decision.side_effect = api_mod.Healthbox3ConnectionError("offline")
+
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=True)
+    await coordinator.async_refresh()
+
+    assert coordinator.last_update_success is True
+    assert coordinator.data.decision is None
+
+
+async def test_v1_only_polling_never_fetches_breeze(hass, v1_data, boost_status):
+    entry = make_config_entry(hass, serial=v1_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v1_data_current.return_value = v1_data
+    client.async_get_boost.return_value = boost_status
+
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=False)
+    await coordinator.async_refresh()
+
+    client.async_get_breeze.assert_not_called()
+    assert coordinator.data.breeze is None
+
+
+async def test_v2_polling_fetches_breeze(hass, v2_data, boost_status, breeze_settings):
+    entry = make_config_entry(hass, serial=v2_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v2_data_current.return_value = v2_data
+    client.async_get_boost.return_value = boost_status
+    client.async_get_breeze.return_value = breeze_settings
+
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=True)
+    await coordinator.async_refresh()
+
+    assert coordinator.data.breeze == breeze_settings
+
+
+async def test_breeze_fetch_failure_does_not_fail_whole_update(hass, v2_data, boost_status):
+    entry = make_config_entry(hass, serial=v2_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v2_data_current.return_value = v2_data
+    client.async_get_boost.return_value = boost_status
+    client.async_get_breeze.side_effect = api_mod.Healthbox3ConnectionError("offline")
+
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=True)
+    await coordinator.async_refresh()
+
+    assert coordinator.last_update_success is True
+    assert coordinator.data.breeze is None
+
+
+async def test_v1_only_polling_never_fetches_room_decisions(hass, v1_data, boost_status):
+    entry = make_config_entry(hass, serial=v1_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v1_data_current.return_value = v1_data
+    client.async_get_boost.return_value = boost_status
+
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=False)
+    await coordinator.async_refresh()
+
+    client.async_get_room_decisions.assert_not_called()
+    assert coordinator.data.room_decisions == {}
+
+
+async def test_v2_polling_fetches_room_decisions(hass, v2_data, boost_status, room_decisions):
+    entry = make_config_entry(hass, serial=v2_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v2_data_current.return_value = v2_data
+    client.async_get_boost.return_value = boost_status
+    client.async_get_room_decisions.return_value = room_decisions
+
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=True)
+    await coordinator.async_refresh()
+
+    assert coordinator.data.room_decisions == room_decisions
+
+
+async def test_room_decisions_fetch_failure_does_not_fail_whole_update(
+    hass, v2_data, boost_status
+):
+    """Same tolerance as decision/breeze, but the fallback is `{}` (not
+    `None`) since callers key into it per room the same way boost does.
+    """
+    entry = make_config_entry(hass, serial=v2_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v2_data_current.return_value = v2_data
+    client.async_get_boost.return_value = boost_status
+    client.async_get_room_decisions.side_effect = api_mod.Healthbox3ConnectionError(
+        "offline"
+    )
+
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=True)
+    await coordinator.async_refresh()
+
+    assert coordinator.last_update_success is True
+    assert coordinator.data.room_decisions == {}
+
+
 async def test_v2_polling_merges_boost_status(hass, v2_data, boost_status):
     entry = make_config_entry(hass, serial=v2_data.serial)
     client = AsyncMock(spec=api_mod.Healthbox3ApiClient)

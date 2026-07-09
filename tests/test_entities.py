@@ -171,3 +171,252 @@ async def test_profile_select_becomes_unavailable_when_room_removed_from_device(
     await hass.async_block_till_done()
 
     assert hass.states.get(f"select.{_PREFIX}_toilet_profile").state == "unavailable"
+
+
+async def test_demand_control_switch_reports_state(
+    hass, mock_api_client, v2_data, boost_status, device_decision
+):
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v2_data.serial,
+        healthbox_data=v2_data,
+        boost_status=boost_status,
+        decision=device_decision,
+    )
+
+    state = hass.states.get(f"switch.{_PREFIX}_demand_control")
+    assert state is not None
+    assert state.state == "off"  # the fixture's program.enable is False
+
+
+async def test_demand_control_switch_not_created_without_api_key(
+    hass, mock_api_client, v1_data, boost_status
+):
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v1_data.serial,
+        api_key=None,
+        healthbox_data=v1_data,
+        boost_status=boost_status,
+    )
+
+    assert hass.states.get(f"switch.{_PREFIX}_demand_control") is None
+
+
+async def test_demand_control_switch_turn_on_calls_api(
+    hass, mock_api_client, v2_data, boost_status, device_decision
+):
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v2_data.serial,
+        healthbox_data=v2_data,
+        boost_status=boost_status,
+        decision=device_decision,
+    )
+
+    await hass.services.async_call(
+        "switch",
+        "turn_on",
+        {"entity_id": f"switch.{_PREFIX}_demand_control"},
+        blocking=True,
+    )
+
+    mock_api_client.async_set_demand_control.assert_awaited_once_with(True)
+
+
+async def test_demand_control_switch_turn_off_calls_api(
+    hass, mock_api_client, v2_data, boost_status, device_decision
+):
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v2_data.serial,
+        healthbox_data=v2_data,
+        boost_status=boost_status,
+        decision=device_decision,
+    )
+
+    await hass.services.async_call(
+        "switch",
+        "turn_off",
+        {"entity_id": f"switch.{_PREFIX}_demand_control"},
+        blocking=True,
+    )
+
+    mock_api_client.async_set_demand_control.assert_awaited_once_with(False)
+
+
+async def test_demand_control_switch_unavailable_when_decision_fetch_failed(
+    hass, mock_api_client, v2_data, boost_status, device_decision
+):
+    """Matches how a room-removal makes the profile select unavailable:
+    mutate the coordinator's already-fetched data directly and trigger a
+    listener update, simulating what a real failed /v1/decision fetch
+    leaves behind (decision=None - see coordinator._async_get_decision_data).
+    """
+    entry = await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v2_data.serial,
+        healthbox_data=v2_data,
+        boost_status=boost_status,
+        decision=device_decision,
+    )
+    coordinator = entry.runtime_data
+
+    coordinator.data.decision = None
+    coordinator.async_update_listeners()
+    await hass.async_block_till_done()
+
+    assert hass.states.get(f"switch.{_PREFIX}_demand_control").state == "unavailable"
+
+
+async def test_breeze_switch_reports_state(
+    hass, mock_api_client, v2_data, boost_status, breeze_settings
+):
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v2_data.serial,
+        healthbox_data=v2_data,
+        boost_status=boost_status,
+        breeze=breeze_settings,
+    )
+
+    state = hass.states.get(f"switch.{_PREFIX}_breeze")
+    assert state is not None
+    assert state.state == "on"  # the fixture's enable is True
+
+
+async def test_breeze_switch_not_created_without_api_key(
+    hass, mock_api_client, v1_data, boost_status
+):
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v1_data.serial,
+        api_key=None,
+        healthbox_data=v1_data,
+        boost_status=boost_status,
+    )
+
+    assert hass.states.get(f"switch.{_PREFIX}_breeze") is None
+
+
+async def test_breeze_switch_turn_off_calls_api(
+    hass, mock_api_client, v2_data, boost_status, breeze_settings
+):
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v2_data.serial,
+        healthbox_data=v2_data,
+        boost_status=boost_status,
+        breeze=breeze_settings,
+    )
+
+    await hass.services.async_call(
+        "switch",
+        "turn_off",
+        {"entity_id": f"switch.{_PREFIX}_breeze"},
+        blocking=True,
+    )
+
+    mock_api_client.async_set_breeze_enable.assert_awaited_once_with(False)
+
+
+async def test_breeze_switch_unavailable_when_breeze_fetch_failed(
+    hass, mock_api_client, v2_data, boost_status, breeze_settings
+):
+    entry = await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v2_data.serial,
+        healthbox_data=v2_data,
+        boost_status=boost_status,
+        breeze=breeze_settings,
+    )
+    coordinator = entry.runtime_data
+
+    coordinator.data.breeze = None
+    coordinator.async_update_listeners()
+    await hass.async_block_till_done()
+
+    assert hass.states.get(f"switch.{_PREFIX}_breeze").state == "unavailable"
+
+
+async def test_silent_switch_reports_state(
+    hass, mock_api_client, v2_data, boost_status, device_decision
+):
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v2_data.serial,
+        healthbox_data=v2_data,
+        boost_status=boost_status,
+        decision=device_decision,
+    )
+
+    state = hass.states.get(f"switch.{_PREFIX}_silent")
+    assert state is not None
+    assert state.state == "off"  # the fixture's silent.enable is False
+
+
+async def test_silent_switch_not_created_without_api_key(
+    hass, mock_api_client, v1_data, boost_status
+):
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v1_data.serial,
+        api_key=None,
+        healthbox_data=v1_data,
+        boost_status=boost_status,
+    )
+
+    assert hass.states.get(f"switch.{_PREFIX}_silent") is None
+
+
+async def test_silent_switch_turn_on_calls_api(
+    hass, mock_api_client, v2_data, boost_status, device_decision
+):
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v2_data.serial,
+        healthbox_data=v2_data,
+        boost_status=boost_status,
+        decision=device_decision,
+    )
+
+    await hass.services.async_call(
+        "switch",
+        "turn_on",
+        {"entity_id": f"switch.{_PREFIX}_silent"},
+        blocking=True,
+    )
+
+    mock_api_client.async_set_silent_enable.assert_awaited_once_with(True)
+
+
+async def test_silent_switch_unavailable_when_decision_fetch_failed(
+    hass, mock_api_client, v2_data, boost_status, device_decision
+):
+    entry = await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v2_data.serial,
+        healthbox_data=v2_data,
+        boost_status=boost_status,
+        decision=device_decision,
+    )
+    coordinator = entry.runtime_data
+
+    coordinator.data.decision = None
+    coordinator.async_update_listeners()
+    await hass.async_block_till_done()
+
+    assert hass.states.get(f"switch.{_PREFIX}_silent").state == "unavailable"

@@ -28,7 +28,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from .const import BOOST_DURATION_PRESETS, BOOST_LEVEL_MAX, BOOST_LEVEL_MIN
+from .const import BOOST_DURATION_PRESETS, BOOST_LEVEL_MAX, BOOST_LEVEL_MIN, DOMAIN
 from .coordinator import (
     BoostParams,
     Healthbox3ConfigEntry,
@@ -323,7 +323,9 @@ class Healthbox3RoomBoostFan(_Healthbox3BoostFan):
     def _check_room_exists(self) -> None:
         if not room_exists(self.coordinator, self._room_id):
             raise HomeAssistantError(
-                f"Room {self._room_id} is no longer present on this Healthbox device"
+                translation_domain=DOMAIN,
+                translation_key="room_not_found",
+                translation_placeholders={"room_id": str(self._room_id)},
             )
 
     def _remaining(self) -> int | None:
@@ -384,5 +386,10 @@ class Healthbox3AllBoostFan(_Healthbox3BoostFan):
         await self.coordinator.async_request_refresh()
         if failed:
             raise HomeAssistantError(
-                f"Failed to {'start' if enable else 'stop'} boost for rooms: {failed}"
+                translation_domain=DOMAIN,
+                translation_key="boost_partial_failure",
+                translation_placeholders={
+                    "action": "start" if enable else "stop",
+                    "rooms": str(failed),
+                },
             )

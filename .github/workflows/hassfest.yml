@@ -2,7 +2,21 @@ name: Validate with hassfest
 
 on:
   push:
+    paths-ignore:
+      - ".gitignore"
+      - "LICENSE"
+      - "CLAUDE.md"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "CONTRIBUTING.md"
   pull_request:
+    paths-ignore:
+      - ".gitignore"
+      - "LICENSE"
+      - "CLAUDE.md"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "CONTRIBUTING.md"
   schedule:
     - cron: "0 0 * * *"
 

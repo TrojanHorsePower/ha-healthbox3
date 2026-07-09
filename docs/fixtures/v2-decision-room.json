@@ -1,0 +1,24 @@
+{
+  "1": {
+    "demand": {
+      "CO2": {
+        "static": {
+          "enable": true,
+          "minimum": 650.0,
+          "maximum": 800.0
+        }
+      }
+    }
+  },
+  "2": {
+    "demand": {
+      "CO2": {
+        "static": {
+          "enable": false,
+          "minimum": 650.0,
+          "maximum": 800.0
+        }
+      }
+    }
+  }
+}

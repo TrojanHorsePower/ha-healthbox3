@@ -23,6 +23,66 @@ API_V2_API_KEY = "/v2/api/api_key"
 API_V2_API_KEY_STATUS = "/v2/api/api_key/status"
 API_V2_PROFILE_NAME = "/v2/api/data/current/room/{room_id}/profile_name"
 
+# Undocumented in either Renson PDF - reverse-engineered from the device's
+# own firmware web UI JavaScript (kept locally, gitignored, see CLAUDE.md).
+# Confirmed reachable with no auth header at all when probed directly, but
+# every probe so far has been against a device with an API key already
+# active - unlike the two lines above, there's no independent evidence
+# these work *without* one, so entities built against them are gated on
+# coordinator.use_v2 the same as profile_name, not assumed key-independent
+# just because they happen to be "v1"-prefixed.
+API_V1_DECISION = "/v1/decision"
+
+# Device-wide minimum ventilation level, as a percentage. The installer
+# web UI's own field has no min/max validation in its JS - these bounds
+# are the range the Renson mobile app itself offers, not independently
+# confirmed against the local API.
+GLOBAL_MINIMUM_VENTILATION_MIN = 10.0
+GLOBAL_MINIMUM_VENTILATION_MAX = 30.0
+
+# Same undocumented/reverse-engineered status as API_V1_DECISION above.
+API_V2_DECISION_BREEZE = "/v2/decision/breeze"
+
+# Confirmed from the device's own web UI's hardcoded dropdown options
+# (15-35 in steps of 1) - unlike the global minimum bounds above, these
+# are a real constraint the local API's own client enforces, not just
+# what the mobile app happens to offer.
+BREEZE_TEMP_MIN = 15.0
+BREEZE_TEMP_MAX = 35.0
+
+# Same undocumented/reverse-engineered status as API_V1_DECISION above.
+# Confirmed to use the exact same room id numbering as data/current (cross-
+# checked via each room's `nominal` m3/h value, 100% match across all 7
+# rooms on real hardware).
+API_V2_DECISION_ROOM = "/v2/decision/room"
+
+# CO2 static demand threshold, in ppm - confirmed from the device's own web
+# UI's hardcoded dropdown options.
+CO2_THRESHOLD_MIN = 650.0
+CO2_THRESHOLD_MAX = 2000.0
+CO2_THRESHOLD_STEP = 50.0
+
+# Silent (reduced-noise schedule) reduction, as a percentage. The Renson
+# mobile app displays this with a negative sign as a cosmetic convention
+# only (e.g. "-10%") - the wire value, and this bound, are the positive
+# magnitude.
+SILENT_REDUCTION_MIN = 5.0
+SILENT_REDUCTION_MAX = 25.0
+
+# /v1/decision's `silent` block has one schedule array per weekday; this
+# client only supports a single shared start/stop pair applied uniformly
+# to every day (matching how the Renson app itself presents it), so a
+# write touches all seven.
+SILENT_WEEKDAYS = [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+]
+
 API_KEY_STATE_VALID = "valid"
 API_KEY_STATE_EMPTY = "empty"
 

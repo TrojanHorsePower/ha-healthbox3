@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import PROFILES
+from .const import DOMAIN, PROFILES
 from .coordinator import Healthbox3ConfigEntry, Healthbox3DataUpdateCoordinator
 from .entity import Healthbox3Entity
 
@@ -82,7 +82,9 @@ class Healthbox3ProfileSelect(Healthbox3Entity, SelectEntity):
             # "device is broken" - check against the coordinator's own room
             # list first rather than let that reach the device.
             raise HomeAssistantError(
-                f"Room {self._room_id} is no longer present on this Healthbox device"
+                translation_domain=DOMAIN,
+                translation_key="room_not_found",
+                translation_placeholders={"room_id": str(self._room_id)},
             )
         await self.coordinator.client.async_set_profile(self._room_id, option)
         await self.coordinator.async_request_refresh()

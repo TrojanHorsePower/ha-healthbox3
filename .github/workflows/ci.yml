@@ -3,7 +3,21 @@ name: CI
 on:
   push:
     branches: [master]
+    paths-ignore:
+      - ".gitignore"
+      - "LICENSE"
+      - "CLAUDE.md"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "CONTRIBUTING.md"
   pull_request:
+    paths-ignore:
+      - ".gitignore"
+      - "LICENSE"
+      - "CLAUDE.md"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "CONTRIBUTING.md"
 
 jobs:
   test:

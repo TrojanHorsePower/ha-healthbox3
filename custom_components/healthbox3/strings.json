@@ -93,6 +93,47 @@
       "boost_all": {
         "name": "Boost all"
       }
+    },
+    "switch": {
+      "demand_control": {
+        "name": "Demand control"
+      },
+      "breeze": {
+        "name": "Breeze"
+      },
+      "silent": {
+        "name": "Silent"
+      }
+    },
+    "number": {
+      "minimum_ventilation_level": {
+        "name": "Minimum ventilation level"
+      },
+      "breeze_temperature": {
+        "name": "Breeze temperature"
+      },
+      "room_co2_threshold": {
+        "name": "{room_name} CO2 threshold"
+      },
+      "silent_reduction": {
+        "name": "Silent reduction"
+      }
+    },
+    "time": {
+      "silent_start_time": {
+        "name": "Silent start time"
+      },
+      "silent_stop_time": {
+        "name": "Silent stop time"
+      }
+    }
+  },
+  "exceptions": {
+    "room_not_found": {
+      "message": "Room {room_id} is no longer present on this Healthbox device."
+    },
+    "boost_partial_failure": {
+      "message": "Failed to {action} boost for rooms: {rooms}."
     }
   }
 }

@@ -15,12 +15,15 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .api import (
     BoostStatus,
+    BreezeSettings,
+    DeviceDecision,
     Healthbox3ApiClient,
     Healthbox3AuthenticationError,
     Healthbox3ConnectionError,
     Healthbox3Error,
     Healthbox3InvalidResponseError,
     HealthboxData,
+    RoomDecision,
     async_discover_broadcast,
 )
 from .const import (
@@ -42,11 +45,16 @@ class Healthbox3Data:
 
     Boost status lives on a separate per-room endpoint
     (`/v1/api/boost/{room_id}`), not on `data/current`, so it's fetched as
-    a second step and merged in here.
+    a second step and merged in here. `decision` is `None` whenever it
+    can't be fetched (no active API key, or the fetch itself failed) -
+    entities built against it must treat that as "unavailable", not raise.
     """
 
     healthbox: HealthboxData
     boost: dict[int, BoostStatus] = field(default_factory=dict)
+    decision: DeviceDecision | None = None
+    breeze: BreezeSettings | None = None
+    room_decisions: dict[int, RoomDecision] = field(default_factory=dict)
 
 
 @dataclass
@@ -116,7 +124,57 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
     async def _async_update_data(self) -> Healthbox3Data:
         healthbox = await self._async_get_healthbox_data()
         boost = await self._async_get_boost_data(healthbox)
-        return Healthbox3Data(healthbox=healthbox, boost=boost)
+        decision = await self._async_get_decision_data()
+        breeze = await self._async_get_breeze_data()
+        room_decisions = await self._async_get_room_decisions_data()
+        return Healthbox3Data(
+            healthbox=healthbox,
+            boost=boost,
+            decision=decision,
+            breeze=breeze,
+            room_decisions=room_decisions,
+        )
+
+    async def _async_get_decision_data(self) -> DeviceDecision | None:
+        """Fetch `/v1/decision`, tolerating failure the same way boost does.
+
+        By this point `data/current` already succeeded, so the device is
+        known reachable; a failure here just means the entities built on
+        it go unavailable, not a full update failure. Also never attempted
+        without an active API key - see const.py's API_V1_DECISION comment
+        on why that's a deliberately conservative, not yet proven,
+        assumption.
+        """
+        if not self.use_v2:
+            return None
+        try:
+            return await self.client.async_get_decision()
+        except Healthbox3Error as err:
+            _LOGGER.debug("Failed to fetch decision data: %s", err)
+            return None
+
+    async def _async_get_breeze_data(self) -> BreezeSettings | None:
+        """Fetch `/v2/decision/breeze` - same gating/tolerance as decision."""
+        if not self.use_v2:
+            return None
+        try:
+            return await self.client.async_get_breeze()
+        except Healthbox3Error as err:
+            _LOGGER.debug("Failed to fetch breeze data: %s", err)
+            return None
+
+    async def _async_get_room_decisions_data(self) -> dict[int, RoomDecision]:
+        """Fetch `/v2/decision/room` - same gating/tolerance as decision and
+        breeze, but returns `{}` (not `None`) on failure/v1-only, since
+        callers key into it per room id the same way boost does.
+        """
+        if not self.use_v2:
+            return {}
+        try:
+            return await self.client.async_get_room_decisions()
+        except Healthbox3Error as err:
+            _LOGGER.debug("Failed to fetch room decision data: %s", err)
+            return {}
 
     async def _async_try_relocate(self) -> None:
         """Best-effort: if this entry's device is answering at a new IP

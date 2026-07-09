@@ -17,7 +17,11 @@ rules:
     # const.py, api.py, coordinator.py, entity.py are shared across platforms.
   config-flow-test-coverage: done
     # tests/test_config_flow.py covers success (with/without key), cannot_connect,
-    # invalid_api_key, duplicate-device abort, and reauth (success + failure).
+    # invalid_api_key, duplicate-device abort, reauth (success + failure),
+    # broadcast discovery (single/multiple/none/already-configured-filtered),
+    # the post-manual-entry unicast enrichment probe (responds/no reply),
+    # and the internally-triggered relocate flow (integration_discovery:
+    # success, cannot_connect, no matching entry).
   config-flow: done
     # config_flow.py with translated field descriptions in strings.json.
   dependency-transparency: done
@@ -62,20 +66,23 @@ rules:
     # README documents what host/API key are for and how to obtain them.
   entity-unavailable: done
     # Every entity's `available` property reflects real device/data state
-    # (empty-parameter sensors, missing boost/profile data, removed rooms).
+    # (empty-parameter sensors, missing boost/profile data, removed rooms,
+    # and missing decision/breeze/room-decision data for the demand
+    # control/breeze/silent/CO2-threshold entities).
   integration-owner: done
     # manifest.json codeowners is set.
   log-when-unavailable: done
     # Inherited from DataUpdateCoordinator, which logs once on failure and
     # once on recovery rather than on every poll.
   parallel-updates: done
-    # PARALLEL_UPDATES = 0 set in sensor.py/fan.py/select.py: entities only
-    # read from the coordinator, which itself serializes device polling.
+    # PARALLEL_UPDATES = 0 set in sensor.py/fan.py/select.py/switch.py/
+    # number.py/time.py: entities only read from the coordinator, which
+    # itself serializes device polling.
   reauthentication-flow: done
     # config_flow's async_step_reauth/reauth_confirm, triggered by the
     # coordinator via ConfigEntry.async_start_reauth on a confirmed-invalid key.
   test-coverage: done
-    # Measured via pytest-cov: 95% line coverage (137 tests) across config
+    # Measured via pytest-cov: 96% line coverage (206 tests) across config
     # flow, coordinator, entities, diagnostics, real automation-engine
     # dispatch, and the unicast and broadcast UDP discovery implementations
     # (exercised through a fake datagram transport wired to the real
@@ -144,21 +151,50 @@ rules:
   dynamic-devices: exempt
     # Exactly one device per config entry; rooms are entities, not devices,
     # and are not added/removed outside a full reconfigure.
-  entity-category: exempt
-    # Evaluated every entity class: sensors (temperature/humidity/CO2/VOC/
+  entity-category: done
+    # Evaluated every entity class. Sensors (temperature/humidity/CO2/VOC/
     # AQI, global AQI), the profile select, and both boost fan entities
     # are all primary measurements or primary interactive controls - the
-    # whole reason a user installs this integration - not integration/
-    # device settings or diagnostic meta-info, so none warrant
-    # EntityCategory.CONFIG or DIAGNOSTIC.
+    # whole reason a user installs this integration - so none of those get
+    # a category. The demand control/breeze/silent switches, minimum
+    # ventilation/breeze temperature/CO2 threshold/silent reduction
+    # numbers, and silent start/stop times are all device *configuration*
+    # (how the device behaves, not something to look at or act on day to
+    # day), so those all get EntityCategory.CONFIG.
   entity-device-class: done
     # Set for temperature/humidity/CO2; deliberately omitted for VOC/AQI, which
     # have no matching standard HA device class for this device's proprietary scales.
-  entity-disabled-by-default: todo
+  entity-disabled-by-default: done
+    # Every entity evaluated individually, not just inherited from
+    # entity-category's reasoning. The one real candidate was the airflow
+    # sensor (arguably more "supplementary/technical" than temperature/
+    # humidity/CO2/AQI) - deliberately left enabled: it's a direct way to
+    # confirm whether boost is actually increasing flow, not just a nice-
+    # to-have reading, and a user shouldn't need to already know it exists
+    # to enable it for that troubleshooting purpose. No other entity here
+    # is noisy or supplementary - all are primary measurements or primary
+    # interactive controls (same conclusion entity-category reached).
   entity-translations: done
     # strings.json/translations/en.json cover every entity's translation_key.
-  exception-translations: todo
-  icon-translations: todo
+  exception-translations: done
+    # The three HomeAssistantError raises (select.py's and fan.py's
+    # "room no longer present" guard, fan.py's boost-all partial-failure)
+    # all use translation_domain/translation_key/translation_placeholders
+    # instead of an f-string message, resolved via strings.json's
+    # top-level "exceptions" key.
+  icon-translations: done
+    # icons.json covers every entity translation_key (all sensors, the
+    # profile select, both boost fans, and the demand control/breeze/
+    # silent switches, minimum ventilation/breeze temperature/CO2
+    # threshold/silent reduction numbers, and silent start/stop times).
+    # Sensors with a matching HA device_class (temperature/humidity/CO2)
+    # use its usual icon explicitly; the ones without one (VOC/AQI/
+    # airflow, all on proprietary scales - see entity-device-class above)
+    # get a deliberately chosen icon instead of falling back to a generic
+    # default. State-based overrides: room_profile shows a different
+    # icon per eco/health/intense value, and both boost fans show
+    # mdi:fan-off specifically when off rather than a generic fan icon
+    # regardless of state.
   reconfiguration-flow: done
     # config_flow.py's async_step_reconfigure lets the user update the IP
     # and/or API key in place. Re-validates connectivity and, via
@@ -166,7 +202,19 @@ rules:
     # still the same device by serial - not just something else answering
     # at the new IP. A blank API key field leaves the stored key untouched
     # (data_updates only overrides included keys).
-  repair-issues: todo
+  repair-issues: done
+    # Considered deliberately, not just left unaddressed: this rule's own
+    # guidance is that repair issues are for problems a user can actually
+    # act on, not everything that can go wrong. This integration's two
+    # failure modes that could plausibly qualify are already handled by
+    # more specific, more correct mechanisms - a bad/expired API key goes
+    # through the standard reauthentication flow (reauthentication-flow
+    # above), and a changed IP address self-heals automatically
+    # (discovery-update-info above) with no user action possible or
+    # needed. No other condition this integration can detect (e.g. the
+    # device being genuinely offline) is something a user can fix from
+    # within Home Assistant, so there's no actionable gap left for a
+    # repair issue to cover.
   stale-devices: exempt
     # Single static device per entry; nothing to detect as stale.
 

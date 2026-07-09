@@ -1,0 +1,6 @@
+{
+  "average_temp": 30.0,
+  "enable": true,
+  "min_hold_time": 3600,
+  "ramp_time": 300
+}

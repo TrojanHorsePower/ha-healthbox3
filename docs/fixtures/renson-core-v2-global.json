@@ -1,0 +1,14 @@
+{
+  "MAC": "REDACTED",
+  "IP": "REDACTED",
+  "IFTYPE": "WIFI",
+  "device_type": "HEALTHBOX3",
+  "serial": "REDACTED",
+  "warranty_number": "REDACTED",
+  "firmware version": "2.6.9",
+  "datetime": {
+    "date": "09/07/2026",
+    "time": "02:48:30",
+    "timezone": "Europe/Brussels"
+  }
+}

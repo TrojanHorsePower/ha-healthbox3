@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Demand control switch, to toggle automatic (sensor-driven) ventilation
+  on or off.
+- Minimum ventilation level number, setting the device-wide floor
+  ventilation percentage.
+- Breeze switch and temperature number, for temperature-triggered night
+  cooling.
+- Per-room CO2 threshold number, only created for rooms that support
+  CO2-triggered demand control.
+- Silent schedule switch, reduction number, and start/stop time entities,
+  for the reduced-noise schedule.
+
+  All five require an active API key, the same as the ventilation profile
+  selector.
+
+### Changed
+
+- The error messages for "a room was removed from the device while an
+  action was in progress" and "boost all partially failed" are now
+  translatable into other languages if a translation is ever added
+  (still English-only for now, since only an English translation
+  exists). Both messages also gained a trailing period.
+- Every sensor, the ventilation profile selector, and both boost fan
+  entities now show a specific icon instead of a generic fallback -
+  including the profile selector showing a different icon per profile
+  (eco/health/intense), and both boost fans showing a distinct icon
+  when off vs on.
+
 ## [0.1.4] - 2026-07-07
 
 ### Added

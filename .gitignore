@@ -15,3 +15,5 @@ venv/
 # Vendor documentation kept locally for reference only - copyrighted by
 # Renson, not ours to redistribute from this repo.
 docs/**/*.pdf
+docs/vendor-reference/
+docs/dev-notes/

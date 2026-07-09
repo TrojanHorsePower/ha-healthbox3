@@ -1,0 +1,84 @@
+{
+  "entity": {
+    "sensor": {
+      "room_temperature": {
+        "default": "mdi:thermometer"
+      },
+      "room_humidity": {
+        "default": "mdi:water-percent"
+      },
+      "room_co2": {
+        "default": "mdi:molecule-co2"
+      },
+      "room_voc": {
+        "default": "mdi:molecule"
+      },
+      "room_aqi": {
+        "default": "mdi:air-filter"
+      },
+      "room_airflow": {
+        "default": "mdi:weather-windy"
+      },
+      "global_aqi": {
+        "default": "mdi:air-filter"
+      }
+    },
+    "select": {
+      "room_profile": {
+        "default": "mdi:tune-variant",
+        "state": {
+          "eco": "mdi:leaf",
+          "health": "mdi:heart-pulse",
+          "intense": "mdi:weather-windy"
+        }
+      }
+    },
+    "fan": {
+      "room_boost": {
+        "default": "mdi:fan",
+        "state": {
+          "off": "mdi:fan-off"
+        }
+      },
+      "boost_all": {
+        "default": "mdi:fan-plus",
+        "state": {
+          "off": "mdi:fan-off"
+        }
+      }
+    },
+    "switch": {
+      "demand_control": {
+        "default": "mdi:auto-mode"
+      },
+      "breeze": {
+        "default": "mdi:weather-night"
+      },
+      "silent": {
+        "default": "mdi:sleep"
+      }
+    },
+    "number": {
+      "minimum_ventilation_level": {
+        "default": "mdi:gauge-low"
+      },
+      "breeze_temperature": {
+        "default": "mdi:thermometer"
+      },
+      "room_co2_threshold": {
+        "default": "mdi:molecule-co2"
+      },
+      "silent_reduction": {
+        "default": "mdi:volume-minus"
+      }
+    },
+    "time": {
+      "silent_start_time": {
+        "default": "mdi:clock-start"
+      },
+      "silent_stop_time": {
+        "default": "mdi:clock-end"
+      }
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "program": {
+    "enable": false
+  },
+  "minimum": 20.0,
+  "silent": {
+    "enable": false,
+    "reduction": 5.0,
+    "monday": [
+      { "silent": false, "time": "08:00:00" },
+      { "silent": true, "time": "22:00:00" }
+    ],
+    "tuesday": [
+      { "silent": false, "time": "08:00:00" },
+      { "silent": true, "time": "22:00:00" }
+    ],
+    "wednesday": [
+      { "silent": false, "time": "08:00:00" },
+      { "silent": true, "time": "22:00:00" }
+    ],
+    "thursday": [
+      { "silent": false, "time": "08:00:00" },
+      { "silent": true, "time": "22:00:00" }
+    ],
+    "friday": [
+      { "silent": false, "time": "08:00:00" },
+      { "silent": true, "time": "22:00:00" }
+    ],
+    "saturday": [
+      { "silent": false, "time": "08:00:00" },
+      { "silent": true, "time": "22:00:00" }
+    ],
+    "sunday": [
+      { "silent": false, "time": "08:00:00" },
+      { "silent": true, "time": "22:00:00" }
+    ]
+  }
+}

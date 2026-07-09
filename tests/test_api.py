@@ -126,6 +126,193 @@ async def test_set_profile_rejects_unknown_profile():
         await client.async_set_profile(1, "turbo")
 
 
+def test_parse_decision_ignores_unread_keys(decision_raw):
+    """Confirms DeviceDecision only reads program.enable/minimum/silent -
+    the fixture has no room/breeze/profile/etc. keys at all (see
+    decision_raw's docstring), so this also implicitly confirms those
+    stay unparsed.
+    """
+    decision = api_mod._parse_decision(decision_raw)
+
+    assert decision.program_enabled is False
+    assert decision.global_minimum == 20.0
+    assert decision.silent.enable is False
+    assert decision.silent.reduction == 5.0
+    assert decision.silent.start_time == "22:00:00"
+    assert decision.silent.stop_time == "08:00:00"
+
+
+async def test_get_decision_parses_real_shape(decision_raw):
+    session = _FakeSession([_FakeResponse(200, json.dumps(decision_raw))])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    decision = await client.async_get_decision()
+
+    assert decision.program_enabled is False
+    assert decision.global_minimum == 20.0
+    assert decision.silent.enable is False
+
+
+@pytest.mark.parametrize("enable", [True, False])
+async def test_set_demand_control_sends_expected_payload(enable):
+    session = _FakeSession([_FakeResponse(200, "")])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    await client.async_set_demand_control(enable)
+
+    method, url, kwargs = session.calls[0]
+    assert method == "PUT"
+    assert url.endswith("/v1/decision")
+    assert kwargs["json"] == {"program": {"enable": enable}}
+
+
+async def test_set_global_minimum_sends_expected_payload():
+    session = _FakeSession([_FakeResponse(200, "")])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    await client.async_set_global_minimum(15.0)
+
+    method, url, kwargs = session.calls[0]
+    assert method == "PUT"
+    assert url.endswith("/v1/decision")
+    assert kwargs["json"] == {"minimum": 15.0}
+
+
+def test_parse_silent_reads_start_stop_from_monday(decision_raw):
+    """The silent:true entry is the start time, silent:false is the stop
+    time - every weekday in the fixture is identical, so this only proves
+    monday specifically is what gets read (not some other day).
+    """
+    silent = api_mod._parse_silent(decision_raw["silent"])
+
+    assert silent.enable is False
+    assert silent.reduction == 5.0
+    assert silent.start_time == "22:00:00"
+    assert silent.stop_time == "08:00:00"
+
+
+@pytest.mark.parametrize("enable", [True, False])
+async def test_set_silent_enable_sends_expected_payload(enable):
+    session = _FakeSession([_FakeResponse(200, "")])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    await client.async_set_silent_enable(enable)
+
+    method, url, kwargs = session.calls[0]
+    assert method == "PUT"
+    assert url.endswith("/v1/decision")
+    assert kwargs["json"] == {"silent": {"enable": enable}}
+
+
+async def test_set_silent_reduction_sends_expected_payload():
+    session = _FakeSession([_FakeResponse(200, "")])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    await client.async_set_silent_reduction(10.0)
+
+    method, url, kwargs = session.calls[0]
+    assert method == "PUT"
+    assert url.endswith("/v1/decision")
+    assert kwargs["json"] == {"silent": {"reduction": 10.0}}
+
+
+async def test_set_silent_schedule_writes_every_weekday_uniformly():
+    session = _FakeSession([_FakeResponse(200, "")])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    await client.async_set_silent_schedule(start_time="21:00:00", stop_time="07:00:00")
+
+    method, url, kwargs = session.calls[0]
+    assert method == "PUT"
+    assert url.endswith("/v1/decision")
+    expected_day_schedule = [
+        {"silent": True, "time": "21:00:00"},
+        {"silent": False, "time": "07:00:00"},
+    ]
+    assert kwargs["json"] == {
+        "silent": {day: expected_day_schedule for day in api_mod.SILENT_WEEKDAYS}
+    }
+
+
+def test_parse_breeze(breeze_raw):
+    breeze = api_mod._parse_breeze(breeze_raw)
+
+    assert breeze.enable is True
+    assert breeze.average_temp == 30.0
+
+
+async def test_get_breeze_parses_real_shape(breeze_raw):
+    session = _FakeSession([_FakeResponse(200, json.dumps(breeze_raw))])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    breeze = await client.async_get_breeze()
+
+    assert breeze.enable is True
+    assert breeze.average_temp == 30.0
+
+
+@pytest.mark.parametrize("enable", [True, False])
+async def test_set_breeze_enable_sends_expected_payload(enable):
+    session = _FakeSession([_FakeResponse(200, "")])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    await client.async_set_breeze_enable(enable)
+
+    method, url, kwargs = session.calls[0]
+    assert method == "PUT"
+    assert url.endswith("/v2/decision/breeze")
+    assert kwargs["json"] == {"enable": enable}
+
+
+async def test_set_breeze_temp_sends_expected_payload():
+    session = _FakeSession([_FakeResponse(200, "")])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    await client.async_set_breeze_temp(25.0)
+
+    method, url, kwargs = session.calls[0]
+    assert method == "PUT"
+    assert url.endswith("/v2/decision/breeze")
+    assert kwargs["json"] == {"average_temp": 25.0}
+
+
+def test_parse_room_decisions_reads_co2_static_only(room_decisions_raw):
+    """Confirms only demand.CO2.static is read - room "1"/"2" differ only
+    in their `enable` flag, matching the real-hardware finding that this
+    varies per room and isn't tied to room type.
+    """
+    decisions = api_mod._parse_room_decisions(room_decisions_raw)
+
+    assert decisions[1].co2.enable is True
+    assert decisions[1].co2.minimum == 650.0
+    assert decisions[1].co2.maximum == 800.0
+    assert decisions[2].co2.enable is False
+
+
+async def test_get_room_decisions_parses_real_shape(room_decisions_raw):
+    session = _FakeSession([_FakeResponse(200, json.dumps(room_decisions_raw))])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    decisions = await client.async_get_room_decisions()
+
+    assert decisions[1].co2.enable is True
+    assert decisions[2].co2.enable is False
+
+
+async def test_set_room_co2_threshold_sends_expected_payload():
+    session = _FakeSession([_FakeResponse(200, "")])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    await client.async_set_room_co2_threshold(1, minimum=700.0, maximum=850.0)
+
+    method, url, kwargs = session.calls[0]
+    assert method == "PUT"
+    assert url.endswith("/v2/decision/room")
+    assert kwargs["json"] == {
+        "1": {"demand": {"CO2": {"static": {"minimum": 700.0, "maximum": 850.0}}}}
+    }
+
+
 @pytest.mark.parametrize("status", [401, 403])
 async def test_auth_error_statuses_raise_authentication_error(status):
     session = _FakeSession([_FakeResponse(status)])

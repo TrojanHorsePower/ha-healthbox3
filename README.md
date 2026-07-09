@@ -41,6 +41,10 @@ using their real branding here could wrongly imply official endorsement.
 - Automatic, silent reconnection if your Healthbox 3's IP address changes
   (e.g. a DHCP lease renewal) after setup - no notification, no action
   needed.
+- Demand control, minimum ventilation level, Breeze (temperature-triggered
+  night cooling), per-room CO2 threshold, and silent schedule controls -
+  all mirroring settings from Renson's own mobile app; only available with
+  an activated API key (see below).
 
 ## Use cases
 
@@ -98,8 +102,9 @@ search "Renson Healthbox 3".
    already verified by the required HTTP call, so this is purely extra
    detail, never a requirement.
 2. **API key (optional).** You can stop here and use the integration with
-   basic functionality, or unlock full sensor data and profile control -
-   see below.
+   basic functionality, or unlock full sensor data, profile control, and
+   the demand control/minimum ventilation/Breeze/CO2 threshold/silent
+   schedule entities - see below.
 
 ### Changing the IP address or API key later
 
@@ -123,8 +128,9 @@ stored.
 
 Out of the box, the Healthbox 3's local API only exposes basic room/valve
 data and lets you control boost - this doesn't require a key. To unlock
-temperature, humidity, CO2, VOC and air quality sensors, plus ventilation
-profile control, you need an API key from Renson:
+temperature, humidity, CO2, VOC and air quality sensors, ventilation
+profile control, and the demand control/minimum ventilation/Breeze/CO2
+threshold/silent schedule entities, you need an API key from Renson:
 
 1. Find your device's **serial number** and **warranty number**. Both are
    shown in the response of a basic API call to the device - if you're
@@ -172,6 +178,15 @@ v1-only functionality and prompted you to reauthenticate with a new key.
 | `select` | `<room> Profile` | eco/health/intense - only created with an active API key |
 | `fan` | `<room> Boost` | Boost for that room - see "Boost control" below |
 | `fan` | `Boost all` | Boost for every room at once, at one shared level/duration - on only when every room currently reports boost enabled |
+| `switch` | `Demand control` | Toggle automatic (sensor-driven) ventilation on or off - requires an active API key |
+| `switch` | `Breeze` | Toggle temperature-triggered night cooling on or off - requires an active API key |
+| `switch` | `Silent` | Toggle the reduced-noise schedule on or off - requires an active API key |
+| `number` | `Minimum ventilation level` | Device-wide floor ventilation, 10-30% - requires an active API key |
+| `number` | `Breeze temperature` | Breeze's trigger average outdoor temperature, 15-35°C - requires an active API key |
+| `number` | `<room> CO2 threshold` | CO2 concentration (ppm) that triggers this room's demand control - only created for rooms that support it, requires an active API key |
+| `number` | `Silent reduction` | Ventilation reduction while the silent schedule is active, 5-25% - requires an active API key |
+| `time` | `Silent start time` | Time of day the silent schedule starts - requires an active API key |
+| `time` | `Silent stop time` | Time of day the silent schedule stops - requires an active API key |
 
 All entities for a given Healthbox unit are grouped under a single device
 (named after the device's own description, e.g. "Healthbox 3.0" - rename it
@@ -307,9 +322,10 @@ automatically once it's reachable again - no restart required.
   [Changing the IP address or API key later](#changing-the-ip-address-or-api-key-later))
   or fix the address and retry setup instead.
 - **Without an API key**, only basic room/valve data and boost control are
-  available - no temperature/humidity/CO2/VOC/air-quality sensors and no
-  ventilation profile control. This is a limitation of the device's v1 API,
-  not of this integration.
+  available - no temperature/humidity/CO2/VOC/air-quality sensors, no
+  ventilation profile control, and none of the demand control/minimum
+  ventilation/Breeze/CO2 threshold/silent schedule entities. This is a
+  limitation of the device's v1 API, not of this integration.
 - **API keys expire** after a multi-year period set by Renson, with no way
   for the device (or this integration) to detect the expiry date in
   advance. See [Getting an API key](#getting-an-api-key-optional-but-recommended)

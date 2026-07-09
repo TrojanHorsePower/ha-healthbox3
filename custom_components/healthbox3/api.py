@@ -14,14 +14,18 @@ from .const import (
     API_KEY_STATE_VALID,
     API_V1_BOOST,
     API_V1_DATA_CURRENT,
+    API_V1_DECISION,
     API_V2_API_KEY,
     API_V2_API_KEY_STATUS,
     API_V2_DATA_CURRENT,
+    API_V2_DECISION_BREEZE,
+    API_V2_DECISION_ROOM,
     API_V2_PROFILE_NAME,
     DISCOVERY_MESSAGE,
     DISCOVERY_PORT,
     DISCOVERY_TIMEOUT,
     PROFILES,
+    SILENT_WEEKDAYS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -137,6 +141,135 @@ class ApiKeyStatus:
     def is_valid(self) -> bool:
         """Return whether privileged v2 access is currently active."""
         return self.state == API_KEY_STATE_VALID
+
+
+@dataclass
+class SilentSettings:
+    """Silent (reduced-noise) schedule settings, from `/v1/decision`'s
+    `silent` block.
+
+    The real per-weekday arrays (`monday`..`sunday`) are each a pair of
+    `{silent, time}` entries - a `silent: true` entry marking when the
+    schedule starts, a `silent: false` entry marking when it stops. This
+    client only supports a single shared start/stop pair applied
+    uniformly across every day (matching how the Renson app itself
+    presents it, not a genuinely per-day schedule), so only `monday`'s
+    array is ever read; every other weekday is assumed - and always
+    written - to match it exactly.
+    """
+
+    enable: bool
+    reduction: float
+    start_time: str  # "HH:MM:SS", the silent:true entry
+    stop_time: str  # "HH:MM:SS", the silent:false entry
+
+
+def _parse_silent(raw: dict[str, Any]) -> SilentSettings:
+    schedule = {entry["silent"]: entry["time"] for entry in raw["monday"]}
+    return SilentSettings(
+        enable=raw["enable"],
+        reduction=raw["reduction"],
+        start_time=schedule[True],
+        stop_time=schedule[False],
+    )
+
+
+@dataclass
+class DeviceDecision:
+    """Device-wide ventilation decision settings, from `/v1/decision`.
+
+    The real response also has `room`, `breeze`, `profile`, `cdd_*`,
+    `cooking_hood`, `fire_protect`, and `global_ventilation_level` keys -
+    deliberately not parsed here. `room` in particular has a *different*,
+    incompatible shape for CO2 demand data than the dedicated
+    `/v2/decision/room` endpoint (confirmed on real hardware: same field
+    ends up as `offset`+`coefficients` here vs `minimum`+`maximum` there) -
+    `/v2/decision/room` is what the device's own web UI actually reads and
+    writes, so that's the only source ever used for room-level decision
+    data in this client. `breeze` is likewise available here too, but
+    `/v2/decision/breeze` is used instead to avoid maintaining two parsing
+    paths for the same setting.
+    """
+
+    program_enabled: bool
+    global_minimum: float
+    silent: SilentSettings
+
+
+def _parse_decision(raw: dict[str, Any]) -> DeviceDecision:
+    return DeviceDecision(
+        program_enabled=raw["program"]["enable"],
+        global_minimum=raw["minimum"],
+        silent=_parse_silent(raw["silent"]),
+    )
+
+
+@dataclass
+class BreezeSettings:
+    """Breeze (temperature-triggered night cooling) settings, from
+    `/v2/decision/breeze`.
+
+    The real response also has `min_hold_time`/`ramp_time` (confirmed
+    present, both times in seconds) - internal tuning parameters, not
+    something a typical user would want to adjust, so deliberately not
+    parsed or exposed as entities.
+    """
+
+    enable: bool
+    average_temp: float
+
+
+def _parse_breeze(raw: dict[str, Any]) -> BreezeSettings:
+    return BreezeSettings(
+        enable=raw["enable"],
+        average_temp=raw["average_temp"],
+    )
+
+
+@dataclass
+class RoomCO2Demand:
+    """A room's static CO2 demand-control thresholds, from the
+    `demand.CO2.static` block of `/v2/decision/room`.
+
+    `enable` gates whether this room supports CO2-threshold configuration
+    at all - confirmed on real hardware to vary per room and NOT be tied
+    to room type (e.g. Kitchen), reversing what the reference web UI's own
+    JS appears to gate on. `coefficients` is confirmed present but
+    deliberately not parsed/exposed (internal tuning). The dynamic demand
+    block, and the other demand types (DVOC/VOC/absolute_humidity/
+    relative_humidity), are likewise out of scope for this client.
+    """
+
+    enable: bool
+    minimum: float
+    maximum: float
+
+
+@dataclass
+class RoomDecision:
+    """A single room's entry in `/v2/decision/room`.
+
+    The real per-room object also has minimum/nominal/offset/profile (an
+    index, not the string-based profile_name this client already writes
+    via /v2/api/data/current/room/{id}/profile_name) - deliberately not
+    parsed here.
+    """
+
+    co2: RoomCO2Demand
+
+
+def _parse_room_decisions(raw: dict[str, Any]) -> dict[int, RoomDecision]:
+    result: dict[int, RoomDecision] = {}
+    for room_id, r in raw.items():
+        static = r["demand"]["CO2"]["static"]
+        result[int(room_id)] = RoomDecision(
+            co2=RoomCO2Demand(
+                enable=static["enable"],
+                minimum=static["minimum"],
+                maximum=static["maximum"],
+            )
+        )
+    return result
 
 
 @dataclass
@@ -535,3 +668,93 @@ class Healthbox3ApiClient:
             raise Healthbox3InvalidResponseError(
                 "Unexpected discovery response shape"
             ) from err
+
+    async def async_get_decision(self) -> DeviceDecision:
+        """Fetch and parse `/v1/decision`. Requires an active API key."""
+        raw = await self._request("GET", API_V1_DECISION)
+        try:
+            return _parse_decision(raw)
+        except (KeyError, TypeError) as err:
+            raise Healthbox3InvalidResponseError(
+                "Unexpected decision response shape"
+            ) from err
+
+    async def async_set_demand_control(self, enable: bool) -> None:
+        """Enable/disable demand-controlled ventilation. Requires an active API key."""
+        await self._request(
+            "PUT", API_V1_DECISION, json={"program": {"enable": enable}}
+        )
+
+    async def async_set_global_minimum(self, value: float) -> None:
+        """Set the device-wide minimum ventilation level. Requires an active API key."""
+        await self._request("PUT", API_V1_DECISION, json={"minimum": value})
+
+    async def async_get_breeze(self) -> BreezeSettings:
+        """Fetch and parse `/v2/decision/breeze`. Requires an active API key."""
+        raw = await self._request("GET", API_V2_DECISION_BREEZE)
+        try:
+            return _parse_breeze(raw)
+        except (KeyError, TypeError) as err:
+            raise Healthbox3InvalidResponseError(
+                "Unexpected breeze response shape"
+            ) from err
+
+    async def async_set_breeze_enable(self, enable: bool) -> None:
+        """Enable/disable Breeze. Requires an active API key."""
+        await self._request(
+            "PUT", API_V2_DECISION_BREEZE, json={"enable": enable}
+        )
+
+    async def async_set_breeze_temp(self, value: float) -> None:
+        """Set Breeze's trigger average outdoor temperature. Requires an active API key."""
+        await self._request(
+            "PUT", API_V2_DECISION_BREEZE, json={"average_temp": value}
+        )
+
+    async def async_get_room_decisions(self) -> dict[int, RoomDecision]:
+        """Fetch and parse `/v2/decision/room`. Requires an active API key."""
+        raw = await self._request("GET", API_V2_DECISION_ROOM)
+        try:
+            return _parse_room_decisions(raw)
+        except (KeyError, TypeError) as err:
+            raise Healthbox3InvalidResponseError(
+                "Unexpected room decision response shape"
+            ) from err
+
+    async def async_set_room_co2_threshold(
+        self, room_id: int, *, minimum: float, maximum: float
+    ) -> None:
+        """Set a room's CO2 static demand thresholds. Requires an active API key."""
+        await self._request(
+            "PUT",
+            API_V2_DECISION_ROOM,
+            json={
+                str(room_id): {
+                    "demand": {"CO2": {"static": {"minimum": minimum, "maximum": maximum}}}
+                }
+            },
+        )
+
+    async def async_set_silent_enable(self, enable: bool) -> None:
+        """Enable/disable the silent schedule. Requires an active API key."""
+        await self._request(
+            "PUT", API_V1_DECISION, json={"silent": {"enable": enable}}
+        )
+
+    async def async_set_silent_reduction(self, value: float) -> None:
+        """Set the silent schedule's ventilation reduction. Requires an active API key."""
+        await self._request(
+            "PUT", API_V1_DECISION, json={"silent": {"reduction": value}}
+        )
+
+    async def async_set_silent_schedule(self, *, start_time: str, stop_time: str) -> None:
+        """Set the silent schedule's start/stop times ("HH:MM:SS"), applied
+        uniformly to every weekday - the single shared pair this client
+        supports (see SilentSettings' docstring). Requires an active API key.
+        """
+        day_schedule = [
+            {"silent": True, "time": start_time},
+            {"silent": False, "time": stop_time},
+        ]
+        payload = {"silent": {day: day_schedule for day in SILENT_WEEKDAYS}}
+        await self._request("PUT", API_V1_DECISION, json=payload)

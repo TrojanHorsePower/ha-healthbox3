@@ -10,7 +10,14 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .api import Healthbox3ApiClient, Healthbox3ConnectionError, Healthbox3Error
 from .coordinator import Healthbox3ConfigEntry, Healthbox3DataUpdateCoordinator
 
-PLATFORMS = [Platform.FAN, Platform.SELECT, Platform.SENSOR]
+PLATFORMS = [
+    Platform.FAN,
+    Platform.NUMBER,
+    Platform.SELECT,
+    Platform.SENSOR,
+    Platform.SWITCH,
+    Platform.TIME,
+]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: Healthbox3ConfigEntry) -> bool:
