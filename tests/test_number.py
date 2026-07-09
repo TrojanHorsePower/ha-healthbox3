@@ -185,7 +185,10 @@ async def test_room_co2_threshold_number_reports_state(
 
     state = hass.states.get(f"number.{_PREFIX}_toilet_co2_threshold")
     assert state is not None
-    assert float(state.state) == 650.0
+    # The fixture's room 1 has minimum=650/maximum=800 - the entity reads
+    # `maximum`, confirmed to be what the Renson app displays (see
+    # number.py's Healthbox3RoomCO2ThresholdNumber docstring).
+    assert float(state.state) == 800.0
 
     assert hass.states.get(f"number.{_PREFIX}_bathroom_co2_threshold") is None
 
@@ -208,8 +211,11 @@ async def test_room_co2_threshold_number_not_created_without_api_key(
 async def test_room_co2_threshold_number_set_value_preserves_range_calls_api(
     hass, mock_api_client, v2_data, boost_status, room_decisions
 ):
-    """The fixture's room 1 has minimum=650/maximum=800 (a 150-wide range) -
-    setting a new minimum must preserve that range, not just the minimum.
+    """The fixture's room 1 has minimum=650/maximum=800 (a 150-wide range).
+    The entity's value is `maximum` (see number.py's
+    Healthbox3RoomCO2ThresholdNumber docstring for why) - setting a new
+    value must preserve that range by deriving a new `minimum`, not just
+    write `minimum` unchanged.
     """
     await setup_integration(
         hass,
@@ -223,7 +229,7 @@ async def test_room_co2_threshold_number_set_value_preserves_range_calls_api(
     await hass.services.async_call(
         "number",
         "set_value",
-        {"entity_id": f"number.{_PREFIX}_toilet_co2_threshold", "value": 700},
+        {"entity_id": f"number.{_PREFIX}_toilet_co2_threshold", "value": 850},
         blocking=True,
     )
 

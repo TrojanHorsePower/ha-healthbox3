@@ -144,6 +144,16 @@ class Healthbox3RoomCO2ThresholdNumber(Healthbox3Entity, NumberEntity):
     of a device fetch which rooms support it. `available` re-checks the
     same flag live, since a room can also lose it across a device config
     change.
+
+    Reads/writes `demand.CO2.static.maximum`, not `minimum`. Confirmed on
+    real hardware: a fresh `/v2/decision/room` capture showed every
+    CO2-enabled room at minimum=650.0/maximum=800.0, and the Renson app
+    displayed 800 for all of them at that same moment - the app shows
+    `maximum`, reversing this entity's original binding (built against
+    `config_rest.js`'s installer-page logic, which binds its CO2
+    threshold field to `minimum` instead - the installer page and the
+    consumer app disagree on which field is "the" threshold, and the app
+    is what end users actually see).
     """
 
     _attr_translation_key = "room_co2_threshold"
@@ -181,15 +191,18 @@ class Healthbox3RoomCO2ThresholdNumber(Healthbox3Entity, NumberEntity):
     @property
     @override
     def native_value(self) -> float | None:
-        """Return the room's current CO2 threshold."""
+        """Return the room's current CO2 threshold (the `maximum` field -
+        see class docstring for why).
+        """
         co2 = self._co2()
-        return co2.minimum if co2 is not None else None
+        return co2.maximum if co2 is not None else None
 
     @override
     async def async_set_native_value(self, value: float) -> None:
         """Set the room's CO2 threshold, preserving the current
-        maximum-minimum range (the device's own web UI does the same -
-        `maximum` isn't independently user-editable).
+        maximum-minimum span by shifting `minimum` along with it (the
+        device's own web UI does the same, just for the opposite field -
+        `minimum` isn't independently user-editable there either).
         """
         if not room_exists(self.coordinator, self._room_id):
             # Confirmed on real hardware: acting on an unknown room id
@@ -208,9 +221,9 @@ class Healthbox3RoomCO2ThresholdNumber(Healthbox3Entity, NumberEntity):
             )
         co2 = self._co2()
         assert co2 is not None  # HA only calls this when `available` is True
-        new_maximum = co2.maximum + (value - co2.minimum)
+        new_minimum = co2.minimum + (value - co2.maximum)
         await self.coordinator.client.async_set_room_co2_threshold(
-            self._room_id, minimum=value, maximum=new_maximum
+            self._room_id, minimum=new_minimum, maximum=value
         )
         await self.coordinator.async_request_refresh()
 
