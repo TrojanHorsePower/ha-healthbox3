@@ -26,7 +26,8 @@ using their real branding here could wrongly imply official endorsement.
 
 - Per-room sensors for whichever of temperature, humidity, CO2, VOC and air
   quality index your device's hardware actually reports (varies by room).
-- A whole-house air quality index sensor.
+- A whole-house air quality index sensor, and a whole-house ventilation
+  level sensor - only available with an activated API key (see below).
 - A per-room airflow sensor, showing current airflow as a percentage of
   that room's rated (nominal) flow - not capped at 100%, since boost can
   push it well past nominal.
@@ -128,9 +129,10 @@ stored.
 
 Out of the box, the Healthbox 3's local API only exposes basic room/valve
 data and lets you control boost - this doesn't require a key. To unlock
-temperature, humidity, CO2, VOC and air quality sensors, ventilation
-profile control, and the demand control/minimum ventilation/Breeze/CO2
-threshold/silent schedule entities, you need an API key from Renson:
+temperature, humidity, CO2, VOC, air quality, and ventilation level
+sensors, ventilation profile control, and the demand control/minimum
+ventilation/Breeze/CO2 threshold/silent schedule entities, you need an
+API key from Renson:
 
 1. Find your device's **serial number** and **warranty number**. Both are
    shown in the response of a basic API call to the device - if you're
@@ -175,6 +177,7 @@ v1-only functionality and prompted you to reauthenticate with a new key.
 | `sensor` | `<room> Air quality index` | Only created for rooms with an air quality sensor; exposes `main_pollutant` when set |
 | `sensor` | `<room> Airflow` | Current airflow as % of that room's rated (nominal) flow; not capped at 100% - only created for rooms reporting both underlying values |
 | `sensor` | `Air quality index` | Whole-house AQI; exposes `main_pollutant` and `room` |
+| `sensor` | `Ventilation level` | Whole-house current ventilation level, as a percentage; not capped at 100% - requires an active API key |
 | `select` | `<room> Profile` | eco/health/intense - only created with an active API key |
 | `fan` | `<room> Boost` | Boost for that room - see "Boost control" below |
 | `fan` | `Boost all` | Boost for every room at once, at one shared level/duration - on only when every room currently reports boost enabled |
@@ -322,10 +325,11 @@ automatically once it's reachable again - no restart required.
   [Changing the IP address or API key later](#changing-the-ip-address-or-api-key-later))
   or fix the address and retry setup instead.
 - **Without an API key**, only basic room/valve data and boost control are
-  available - no temperature/humidity/CO2/VOC/air-quality sensors, no
-  ventilation profile control, and none of the demand control/minimum
-  ventilation/Breeze/CO2 threshold/silent schedule entities. This is a
-  limitation of the device's v1 API, not of this integration.
+  available - no temperature/humidity/CO2/VOC/air-quality/ventilation-level
+  sensors, no ventilation profile control, and none of the demand
+  control/minimum ventilation/Breeze/CO2 threshold/silent schedule
+  entities. This is a limitation of the device's v1 API, not of this
+  integration.
 - **API keys expire** after a multi-year period set by Renson, with no way
   for the device (or this integration) to detect the expiry date in
   advance. See [Getting an API key](#getting-an-api-key-optional-but-recommended)

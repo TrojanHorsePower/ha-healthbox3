@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   All five require an active API key, the same as the ventilation profile
   selector.
+- Whole-house ventilation level sensor, showing the current aggregate
+  ventilation level as a percentage - requires an active API key.
 
 ### Changed
 
