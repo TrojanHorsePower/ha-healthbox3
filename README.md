@@ -194,8 +194,8 @@ v1-only functionality and prompted you to reauthenticate with a new key.
 | `number` | `Breeze temperature` | Breeze's trigger average outdoor temperature, 15-35°C - requires an active API key |
 | `number` | `<room> CO2 threshold` | CO2 concentration (ppm) that triggers this room's demand control - only created for rooms that support it, requires an active API key |
 | `number` | `Silent reduction` | Ventilation reduction while the silent schedule is active, 5-25% - requires an active API key |
-| `time` | `Silent start time` | Time of day the silent schedule starts - requires an active API key |
-| `time` | `Silent stop time` | Time of day the silent schedule stops - requires an active API key |
+| `time` | `Silent start time` | Time of day the silent schedule starts, applied to every day of the week - requires an active API key, see [Known limitations](#known-limitations) |
+| `time` | `Silent stop time` | Time of day the silent schedule stops, applied to every day of the week - requires an active API key, see [Known limitations](#known-limitations) |
 
 All entities for a given Healthbox unit are grouped under a single device
 (named after the device's own description, e.g. "Healthbox 3.0" - rename it
@@ -343,6 +343,17 @@ automatically once it's reachable again - no restart required.
   for the device (or this integration) to detect the expiry date in
   advance. See [Getting an API key](#getting-an-api-key-optional-but-recommended)
   above.
+- **The silent schedule's start/stop times apply to every day of the week
+  identically - there is no per-day schedule.** The device's API does
+  support a genuinely different start/stop pair for each weekday (this is
+  what Renson's own app lets you configure), but this integration only
+  ever reads and writes a single shared pair, matching how the app
+  presents the common case. If you already have different per-day times
+  set via the app, changing the `Silent start time` or `Silent stop time`
+  entity **once** in Home Assistant overwrites all seven days to match
+  that one shared pair - your existing per-day customization is not
+  preserved. If you rely on different silent hours per day, don't use
+  these two time entities.
 
 ## Troubleshooting
 
