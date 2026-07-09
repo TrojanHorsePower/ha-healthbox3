@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+from typing import override
 
 from homeassistant.components.time import TimeEntity
 from homeassistant.const import EntityCategory
@@ -58,11 +59,13 @@ class Healthbox3SilentStartTime(Healthbox3Entity, TimeEntity):
         self._attr_unique_id = f"{serial}_silent_start_time"
 
     @property
+    @override
     def available(self) -> bool:
         """Return whether the device's decision data is known."""
         return super().available and self.coordinator.data.decision is not None
 
     @property
+    @override
     def native_value(self) -> datetime.time | None:
         """Return the silent schedule's current start time."""
         decision = self.coordinator.data.decision
@@ -70,9 +73,12 @@ class Healthbox3SilentStartTime(Healthbox3Entity, TimeEntity):
             return None
         return datetime.time.fromisoformat(decision.silent.start_time)
 
+    @override
     async def async_set_value(self, value: datetime.time) -> None:
         """Set the silent schedule's start time."""
-        stop_time = self.coordinator.data.decision.silent.stop_time
+        decision = self.coordinator.data.decision
+        assert decision is not None  # HA only calls this when `available` is True
+        stop_time = decision.silent.stop_time
         await self.coordinator.client.async_set_silent_schedule(
             start_time=value.isoformat(), stop_time=stop_time
         )
@@ -98,11 +104,13 @@ class Healthbox3SilentStopTime(Healthbox3Entity, TimeEntity):
         self._attr_unique_id = f"{serial}_silent_stop_time"
 
     @property
+    @override
     def available(self) -> bool:
         """Return whether the device's decision data is known."""
         return super().available and self.coordinator.data.decision is not None
 
     @property
+    @override
     def native_value(self) -> datetime.time | None:
         """Return the silent schedule's current stop time."""
         decision = self.coordinator.data.decision
@@ -110,9 +118,12 @@ class Healthbox3SilentStopTime(Healthbox3Entity, TimeEntity):
             return None
         return datetime.time.fromisoformat(decision.silent.stop_time)
 
+    @override
     async def async_set_value(self, value: datetime.time) -> None:
         """Set the silent schedule's stop time."""
-        start_time = self.coordinator.data.decision.silent.start_time
+        decision = self.coordinator.data.decision
+        assert decision is not None  # HA only calls this when `available` is True
+        start_time = decision.silent.start_time
         await self.coordinator.client.async_set_silent_schedule(
             start_time=start_time, stop_time=value.isoformat()
         )

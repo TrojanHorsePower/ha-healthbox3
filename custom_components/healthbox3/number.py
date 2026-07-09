@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+from typing import override
+
 from homeassistant.components.number import NumberDeviceClass, NumberEntity
 from homeassistant.const import EntityCategory, PERCENTAGE, UnitOfRatio, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from .api import RoomCO2Demand
 from .const import (
     BREEZE_TEMP_MAX,
     BREEZE_TEMP_MIN,
@@ -74,16 +77,19 @@ class Healthbox3GlobalMinimumNumber(Healthbox3Entity, NumberEntity):
         self._attr_unique_id = f"{serial}_minimum_ventilation_level"
 
     @property
+    @override
     def available(self) -> bool:
         """Return whether the device's decision data is known."""
         return super().available and self.coordinator.data.decision is not None
 
     @property
+    @override
     def native_value(self) -> float | None:
         """Return the current minimum ventilation level."""
         decision = self.coordinator.data.decision
         return decision.global_minimum if decision is not None else None
 
+    @override
     async def async_set_native_value(self, value: float) -> None:
         """Set the minimum ventilation level."""
         await self.coordinator.client.async_set_global_minimum(value)
@@ -109,16 +115,19 @@ class Healthbox3BreezeTemperatureNumber(Healthbox3Entity, NumberEntity):
         self._attr_unique_id = f"{serial}_breeze_temperature"
 
     @property
+    @override
     def available(self) -> bool:
         """Return whether the device's breeze data is known."""
         return super().available and self.coordinator.data.breeze is not None
 
     @property
+    @override
     def native_value(self) -> float | None:
         """Return Breeze's current trigger temperature."""
         breeze = self.coordinator.data.breeze
         return breeze.average_temp if breeze is not None else None
 
+    @override
     async def async_set_native_value(self, value: float) -> None:
         """Set Breeze's trigger temperature."""
         await self.coordinator.client.async_set_breeze_temp(value)
@@ -158,22 +167,25 @@ class Healthbox3RoomCO2ThresholdNumber(Healthbox3Entity, NumberEntity):
         self._attr_translation_placeholders = {"room_name": room_name}
         self._attr_unique_id = f"{serial}_room{room_id}_co2_threshold"
 
-    def _co2(self):
+    def _co2(self) -> RoomCO2Demand | None:
         room_decision = self.coordinator.data.room_decisions.get(self._room_id)
         return room_decision.co2 if room_decision is not None else None
 
     @property
+    @override
     def available(self) -> bool:
         """Return whether this room currently supports a CO2 threshold."""
         co2 = self._co2()
         return super().available and co2 is not None and co2.enable
 
     @property
+    @override
     def native_value(self) -> float | None:
         """Return the room's current CO2 threshold."""
         co2 = self._co2()
         return co2.minimum if co2 is not None else None
 
+    @override
     async def async_set_native_value(self, value: float) -> None:
         """Set the room's CO2 threshold, preserving the current
         maximum-minimum range (the device's own web UI does the same -
@@ -195,6 +207,7 @@ class Healthbox3RoomCO2ThresholdNumber(Healthbox3Entity, NumberEntity):
                 translation_placeholders={"room_id": str(self._room_id)},
             )
         co2 = self._co2()
+        assert co2 is not None  # HA only calls this when `available` is True
         new_maximum = co2.maximum + (value - co2.minimum)
         await self.coordinator.client.async_set_room_co2_threshold(
             self._room_id, minimum=value, maximum=new_maximum
@@ -226,16 +239,19 @@ class Healthbox3SilentReductionNumber(Healthbox3Entity, NumberEntity):
         self._attr_unique_id = f"{serial}_silent_reduction"
 
     @property
+    @override
     def available(self) -> bool:
         """Return whether the device's decision data is known."""
         return super().available and self.coordinator.data.decision is not None
 
     @property
+    @override
     def native_value(self) -> float | None:
         """Return the silent schedule's current ventilation reduction."""
         decision = self.coordinator.data.decision
         return decision.silent.reduction if decision is not None else None
 
+    @override
     async def async_set_native_value(self, value: float) -> None:
         """Set the silent schedule's ventilation reduction."""
         await self.coordinator.client.async_set_silent_reduction(value)
