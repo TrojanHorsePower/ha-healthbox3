@@ -3,6 +3,7 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 [![GitHub Release](https://img.shields.io/github/release/TrojanHorsePower/ha-healthbox3.svg)](https://github.com/TrojanHorsePower/ha-healthbox3/releases)
 [![License](https://img.shields.io/github/license/TrojanHorsePower/ha-healthbox3.svg)](LICENSE)
+[![HA Quality Scale](https://img.shields.io/badge/HA%20Quality%20Scale-Platinum-9c6ade.svg)](custom_components/healthbox3/quality_scale.yaml)
 [![CI](https://img.shields.io/github/actions/workflow/status/TrojanHorsePower/ha-healthbox3/ci.yml?label=CI)](https://github.com/TrojanHorsePower/ha-healthbox3/actions/workflows/ci.yml)
 [![HACS Validate](https://img.shields.io/github/actions/workflow/status/TrojanHorsePower/ha-healthbox3/hacs.yml?label=HACS%20Validate)](https://github.com/TrojanHorsePower/ha-healthbox3/actions/workflows/hacs.yml)
 [![hassfest](https://img.shields.io/github/actions/workflow/status/TrojanHorsePower/ha-healthbox3/hassfest.yml?label=hassfest)](https://github.com/TrojanHorsePower/ha-healthbox3/actions/workflows/hassfest.yml)
@@ -393,9 +394,16 @@ pip install -r requirements_test.txt
 pytest
 ```
 
-See `custom_components/healthbox3/quality_scale.yaml` for this
-integration's progress against the Home Assistant [Integration Quality
-Scale](https://developers.home-assistant.io/docs/core/integration-quality-scale/).
+This integration satisfies every Bronze/Silver/Gold/Platinum rule of the
+Home Assistant [Integration Quality
+Scale](https://developers.home-assistant.io/docs/core/integration-quality-scale/)
+that applies to a custom (non-core) integration - the two mechanisms
+core itself uses to verify a subset of these (`.strict-typing`, the
+`brands` repository) have no equivalent for custom integrations, so this
+is self-assessed rather than centrally verified. See
+`custom_components/healthbox3/quality_scale.yaml` for the rule-by-rule
+reasoning, including type-checking enforced in CI (see the mypy badge
+above).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the versioning scheme and
 release process, and [CHANGELOG.md](CHANGELOG.md) for release history.
