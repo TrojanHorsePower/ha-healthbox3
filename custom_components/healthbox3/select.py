@@ -38,7 +38,12 @@ async def async_setup_entry(
 
 
 class Healthbox3ProfileSelect(Healthbox3Entity, SelectEntity):
-    """Select the ventilation profile (eco/health/intense) for a room."""
+    """Select the ventilation profile (eco/health/intense) for a room.
+
+    Always reads/writes the string-based profile_name field, never the
+    index-based `profile` field also present elsewhere in the API - see
+    RoomDecision's docstring in api.py for why that index isn't trusted.
+    """
 
     _attr_translation_key = "room_profile"
     _attr_options = PROFILES

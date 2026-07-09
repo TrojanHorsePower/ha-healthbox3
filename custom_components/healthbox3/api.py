@@ -265,6 +265,15 @@ class RoomDecision:
     signal that keeps DeviceDecision's fire_protect block untouched - not
     worth the risk of writing to fields the vendor deliberately doesn't
     expose to end users, for a feature nobody asked for.
+
+    A further reason `profile`'s index is never parsed: its indexing
+    convention has already changed between firmware versions once -
+    firmware 1.11.1 was 1-indexed (the web UI's own JS converted to/from
+    a 0-indexed dropdown), firmware 2.6.9 is 0-indexed with no conversion
+    at all. If this index were ever parsed, a future OS/App update could
+    silently flip that convention again with no error - just a wrong
+    profile reading - which is a large part of why the string-based
+    profile_name endpoint is used instead everywhere in this client.
     """
 
     co2: RoomCO2Demand
