@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import override
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -223,6 +224,7 @@ class Healthbox3RoomSensor(Healthbox3Entity, SensorEntity):
         return next((s for s in room.sensors if s.type == self._sensor_type), None)
 
     @property
+    @override
     def available(self) -> bool:
         """Return whether the sensor is reporting data.
 
@@ -235,6 +237,7 @@ class Healthbox3RoomSensor(Healthbox3Entity, SensorEntity):
         return sensor is not None and sensor.is_available
 
     @property
+    @override
     def native_value(self) -> bool | float | str | None:
         """Return the sensor's current value."""
         sensor = self._find_sensor()
@@ -246,6 +249,7 @@ class Healthbox3RoomSensor(Healthbox3Entity, SensorEntity):
         return None
 
     @property
+    @override
     def extra_state_attributes(self) -> dict[str, str] | None:
         """Return the main pollutant, for the AQI sensor only."""
         if self._sensor_type != SENSOR_TYPE_AQI:
@@ -290,6 +294,7 @@ class Healthbox3RoomAirflowSensor(Healthbox3Entity, SensorEntity):
         )
 
     @property
+    @override
     def available(self) -> bool:
         """Return whether this room currently reports both flow_rate and nominal."""
         if not super().available:
@@ -298,6 +303,7 @@ class Healthbox3RoomAirflowSensor(Healthbox3Entity, SensorEntity):
         return room is not None and _room_airflow_percentage(room) is not None
 
     @property
+    @override
     def native_value(self) -> float | None:
         """Return current flow rate as a percentage of nominal."""
         room = self._find_room()
@@ -331,6 +337,7 @@ class Healthbox3GlobalAqiSensor(Healthbox3Entity, SensorEntity):
         )
 
     @property
+    @override
     def available(self) -> bool:
         """Return whether the global AQI sensor is reporting data."""
         if not super().available:
@@ -339,6 +346,7 @@ class Healthbox3GlobalAqiSensor(Healthbox3Entity, SensorEntity):
         return sensor is not None and sensor.is_available
 
     @property
+    @override
     def native_value(self) -> bool | float | str | None:
         """Return the global AQI value."""
         sensor = self._find_sensor()
@@ -347,6 +355,7 @@ class Healthbox3GlobalAqiSensor(Healthbox3Entity, SensorEntity):
         return sensor.parameters["index"].value
 
     @property
+    @override
     def extra_state_attributes(self) -> dict[str, str] | None:
         """Return the main pollutant and the room it was measured in."""
         sensor = self._find_sensor()
@@ -385,11 +394,13 @@ class Healthbox3GlobalVentilationLevelSensor(Healthbox3Entity, SensorEntity):
         self._attr_unique_id = f"{serial}_global_ventilation_level"
 
     @property
+    @override
     def available(self) -> bool:
         """Return whether the device's decision data is known."""
         return super().available and self.coordinator.data.decision is not None
 
     @property
+    @override
     def native_value(self) -> float | None:
         """Return the current whole-house ventilation level."""
         decision = self.coordinator.data.decision
