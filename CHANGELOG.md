@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Device-reported errors now include a short `category` label (e.g.
+  "Power", "Fan and main PCB") alongside the existing code and
+  description, on both the repair issue and the `Device errors` sensor.
+  Best-effort only - see [Known limitations](README.md#known-limitations),
+  since it's sourced from Renson's public error-code index rather than
+  the local API and hasn't been confirmed against a real device error.
+
 ## [0.3.0] - 2026-07-09
 
 ### ⚠️ Breaking changes

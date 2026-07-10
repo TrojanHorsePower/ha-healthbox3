@@ -380,6 +380,14 @@ automatically once it's reachable again - no restart required.
   or resolve an error; the repair issue and the `Device errors` sensor
   both disappear/update automatically once the device stops reporting it,
   no Home Assistant-side action needed either way.
+- **The error `category` shown alongside a device error's code/description
+  is best-effort, not confirmed against a real device.** It's derived
+  from a code-prefix table sourced from Renson's public help-center/FAQ
+  error index, a separate source from the device's own local API - real
+  device errors have never actually been observed (`/v1/error` has only
+  ever returned empty), so this mapping hasn't been cross-checked against
+  a real populated response. Treat the category as a helpful hint, not a
+  guarantee; the raw code and description are always shown alongside it.
 
 ## Troubleshooting
 
