@@ -25,6 +25,13 @@ are Renson's own Healthbox 3 branding, used to identify the product this
 integration connects to - not an indication of official support or
 endorsement.
 
+This integration is HACS-only for now. Submitting it to Home Assistant
+core isn't planned by its maintainer - that path requires extracting
+`api.py` into a standalone published PyPI package, a multi-PR core
+review process, and an open-ended maintenance commitment as code owner,
+which is beyond what's currently on offer here. If you're interested in
+taking that on, please open a GitHub issue to discuss it.
+
 ## Features
 
 - Per-room sensors for whichever of temperature, humidity, CO2, VOC and air
