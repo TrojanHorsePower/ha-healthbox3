@@ -96,7 +96,18 @@ class Healthbox3DemandControlSwitch(Healthbox3Entity, SwitchEntity):
 
 
 class Healthbox3SilentSwitch(Healthbox3Entity, SwitchEntity):
-    """Toggle the silent (reduced-noise) schedule on or off."""
+    """Toggle the silent (reduced-noise) schedule on or off.
+
+    Presents/writes the raw `silent.enable` field as-is, unlike
+    demand control's `program.enable` (see
+    Healthbox3DemandControlSwitch). Unlike CO2 threshold and demand
+    control, no vendor JS or PDF reference ever mentions "silent" at
+    all - this feature has zero corroborating source to cross-check
+    field semantics against. Explicitly verified anyway: confirmed
+    directly against the Renson app that this switch's on/off state
+    matches the app's Silent toggle, with no inversion - the raw field
+    is correct as bound, not just unconfirmed-and-assumed-fine.
+    """
 
     _attr_translation_key = "silent"
     _attr_entity_category = EntityCategory.CONFIG
