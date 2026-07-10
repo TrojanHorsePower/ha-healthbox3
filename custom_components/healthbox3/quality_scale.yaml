@@ -73,7 +73,8 @@ rules:
     # Every entity's `available` property reflects real device/data state
     # (empty-parameter sensors, missing boost/profile data, removed rooms,
     # and missing decision/breeze/room-decision data for the demand
-    # control/breeze/silent/CO2-threshold entities).
+    # control/silent switches, breeze temperature/CO2-threshold numbers,
+    # and silent start/stop times).
   integration-owner: done
     # manifest.json codeowners is set.
   log-when-unavailable: done
