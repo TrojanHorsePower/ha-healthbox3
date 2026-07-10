@@ -64,8 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   trigger temperature, which the `Breeze temperature` number entity still
   controls) - the same restraint this integration already applies to
   `fire_protect` and Qmin/Qnom/Offset. Use the Renson app or the device
-  itself to turn Breeze on or off. See
-  [Known limitations](README.md#known-limitations).
+  itself to turn Breeze on or off.
 
 ### Fixed
 
