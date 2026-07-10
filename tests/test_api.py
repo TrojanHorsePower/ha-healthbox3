@@ -333,6 +333,7 @@ async def test_get_errors_parses_real_shape(errors_raw):
             description="Sensor fault in room 3",
             association_id="abc123",
             severity="critical",
+            category="Unknown",
         ),
         api_mod.DeviceError(
             code="W007",
@@ -340,6 +341,7 @@ async def test_get_errors_parses_real_shape(errors_raw):
             description="Filter replacement recommended",
             association_id="def456",
             severity="warning",
+            category="Unknown",
         ),
     ]
 
@@ -357,6 +359,62 @@ async def test_get_errors_rejects_unexpected_shape():
 
     with pytest.raises(api_mod.Healthbox3InvalidResponseError):
         await client.async_get_errors()
+
+
+@pytest.mark.parametrize(
+    ("code", "expected_category"),
+    [
+        ("10099", "Control valves / valve collectors"),
+        ("10199", "Control valves / valve collectors"),
+        ("10299", "Control valves / valve collectors"),
+        ("10399", "Power"),
+        ("10499", "Valve collectors"),
+        ("10599", "Air leaks"),
+        ("10699", "Kitchen control valve"),
+        ("10799", "Kitchen control valve"),
+        ("10899", "Fan and main PCB"),
+        ("10999", "Control valves"),
+        ("11099", "Control valves"),
+        ("11199", "Control valves"),
+        ("11299", "Measurement error"),
+        ("11399", "Control valves"),
+        ("30099", "Fire protection mode"),
+        ("30199", "Clock failure"),
+    ],
+)
+def test_categorize_error_code_known_prefixes(code, expected_category):
+    assert api_mod._categorize_error_code(code) == expected_category
+
+
+@pytest.mark.parametrize("code", ["99999", "00000", "abc", "", "1"])
+def test_categorize_error_code_unknown_prefix_falls_back(code):
+    assert api_mod._categorize_error_code(code) == "Unknown"
+
+
+async def test_get_errors_populates_category_for_known_prefix():
+    session = _FakeSession(
+        [
+            _FakeResponse(
+                200,
+                json.dumps(
+                    [
+                        {
+                            "code": "10812",
+                            "time": "2026-01-15T08:30:00Z",
+                            "description": "Fan fault",
+                            "association_id": "abc123",
+                            "severity": "critical",
+                        }
+                    ]
+                ),
+            )
+        ]
+    )
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    errors = await client.async_get_errors()
+
+    assert errors[0].category == "Fan and main PCB"
 
 
 @pytest.mark.parametrize("status", [401, 403])

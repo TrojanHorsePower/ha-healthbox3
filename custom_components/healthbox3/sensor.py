@@ -485,4 +485,5 @@ class Healthbox3DeviceErrorsSensor(Healthbox3Entity, SensorEntity):
             "description": latest.description,
             "severity": latest.severity,
             "time": latest.time,
+            "category": latest.category,
         }

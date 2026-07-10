@@ -145,7 +145,7 @@
   "issues": {
     "device_error": {
       "title": "La Healthbox a signalé une erreur {severity}",
-      "description": "La Healthbox a signalé une erreur (code {code}) : {description}\n\nSignalée à {time}. Cela ne peut pas être effacé depuis Home Assistant - utilisez l'application Renson ou l'appareil lui-même pour la reconnaître ou la résoudre. Ce problème disparaîtra automatiquement dès que l'appareil ne le signalera plus."
+      "description": "La Healthbox a signalé une erreur de catégorie {category} (code {code}) : {description}\n\nSignalée à {time}. Cela ne peut pas être effacé depuis Home Assistant - utilisez l'application Renson ou l'appareil lui-même pour la reconnaître ou la résoudre. Consultez l'application Renson ou contactez votre installateur pour des étapes de dépannage détaillées. Ce problème disparaîtra automatiquement dès que l'appareil ne le signalera plus."
     }
   }
 }

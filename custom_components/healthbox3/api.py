@@ -309,6 +309,48 @@ def _parse_room_decisions(raw: dict[str, Any]) -> dict[int, RoomDecision]:
     return result
 
 
+# Maps a 5-digit error code's first 3 digits to a short category name.
+# Sourced from Renson's public help-center/FAQ error-code index
+# (faqs.ri4stat.eu), a genuinely separate source from the device's own
+# local API and not one of the two official PDFs (neither PDF mentions
+# error codes at all). /v1/error has only ever been observed empty on
+# real hardware (see DeviceError's docstring), so this table is a
+# well-evidenced best guess, not confirmed against a real populated
+# response - it may be incomplete or slightly wrong until an actual
+# error occurs and gets cross-checked. Deliberately just a short
+# category label per prefix, not Renson's own (copyrighted) per-code
+# troubleshooting text.
+_ERROR_CATEGORIES: dict[str, str] = {
+    "100": "Control valves / valve collectors",
+    "101": "Control valves / valve collectors",
+    "102": "Control valves / valve collectors",
+    "103": "Power",
+    "104": "Valve collectors",
+    "105": "Air leaks",
+    "106": "Kitchen control valve",
+    "107": "Kitchen control valve",
+    "108": "Fan and main PCB",
+    "109": "Control valves",
+    "110": "Control valves",
+    "111": "Control valves",
+    "112": "Measurement error",
+    "113": "Control valves",
+    "300": "Fire protection mode",
+    "301": "Clock failure",
+}
+
+
+def _categorize_error_code(code: str) -> str:
+    """Map an error code's first 3 digits to a short category name.
+
+    Falls back to "Unknown" for any prefix not in `_ERROR_CATEGORIES`
+    (including codes shorter than 3 characters) - deliberately never
+    raises, since this is a best-effort label layered on top of the
+    always-available raw code, not something anything else depends on.
+    """
+    return _ERROR_CATEGORIES.get(code[:3], "Unknown")
+
+
 @dataclass
 class DeviceError:
     """A single device-reported error/fault, from `/v1/error`.
@@ -319,6 +361,10 @@ class DeviceError:
     it and `association_id` are coerced to `str` here since neither is
     ever compared or computed on, only displayed. `severity` is confirmed
     to be either "critical" or "warning".
+
+    `category` is derived from `code` via `_categorize_error_code` - see
+    `_ERROR_CATEGORIES`'s comment for why it's a best-effort label, not a
+    confirmed fact.
     """
 
     code: str
@@ -326,6 +372,7 @@ class DeviceError:
     description: str
     association_id: str
     severity: str
+    category: str
 
 
 def _parse_errors(raw: list[dict[str, Any]]) -> list[DeviceError]:
@@ -336,6 +383,7 @@ def _parse_errors(raw: list[dict[str, Any]]) -> list[DeviceError]:
             description=e["description"],
             association_id=str(e["association_id"]),
             severity=e["severity"],
+            category=_categorize_error_code(str(e["code"])),
         )
         for e in raw
     ]

@@ -145,7 +145,7 @@
   "issues": {
     "device_error": {
       "title": "Healthbox reported a {severity} error",
-      "description": "The Healthbox reported an error (code {code}): {description}\n\nReported at {time}. This can't be cleared from Home Assistant - use the Renson app or the device itself to acknowledge or resolve it. This issue will disappear automatically once the device stops reporting it."
+      "description": "The Healthbox reported a {category} error (code {code}): {description}\n\nReported at {time}. This can't be cleared from Home Assistant - use the Renson app or the device itself to acknowledge or resolve it. Check the Renson app or contact your installer for detailed troubleshooting steps. This issue will disappear automatically once the device stops reporting it."
     }
   }
 }

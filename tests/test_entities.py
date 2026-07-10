@@ -277,6 +277,9 @@ async def test_device_errors_sensor_attributes_reflect_most_recent_error(
     assert state.attributes["description"] == "Sensor fault in room 3"
     assert state.attributes["severity"] == "critical"
     assert state.attributes["time"] == "2026-01-15T08:30:00Z"
+    # E042 doesn't match any known 3-digit prefix (see
+    # api._ERROR_CATEGORIES) - the fixture is hand-built, not a real code.
+    assert state.attributes["category"] == "Unknown"
 
 
 async def test_device_errors_sensor_not_created_without_api_key(

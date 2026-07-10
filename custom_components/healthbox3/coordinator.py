@@ -264,6 +264,7 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
                     "description": error.description,
                     "time": error.time,
                     "severity": error.severity,
+                    "category": error.category,
                 },
             )
 

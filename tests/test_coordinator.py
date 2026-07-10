@@ -301,6 +301,7 @@ async def test_device_error_creates_repair_issue(hass, v2_data, boost_status, de
         "description": "Sensor fault in room 3",
         "time": "2026-01-15T08:30:00Z",
         "severity": "critical",
+        "category": "Unknown",
     }
     assert warning is not None
     assert warning.severity is ir.IssueSeverity.WARNING
@@ -318,6 +319,7 @@ async def test_device_error_unknown_severity_falls_back_to_warning(hass, v2_data
             description="Unknown severity",
             association_id="zzz",
             severity="something-new",
+            category="Unknown",
         )
     ]
 
