@@ -359,14 +359,6 @@ automatically once it's reachable again - no restart required.
   control/minimum ventilation/Breeze/CO2 threshold/silent schedule
   entities. This is a limitation of the device's v1 API, not of this
   integration.
-- **Breeze (temperature-triggered night cooling) can't be turned on or off
-  from Home Assistant, only its trigger temperature can be adjusted.**
-  Earlier releases (up to 0.2.0) shipped a `Breeze` switch that did toggle
-  it, but neither Renson's mobile app nor its own device web UI ever
-  exposes an on/off control for Breeze (only the trigger temperature) -
-  the same restraint this integration already applies to `fire_protect`
-  and Qmin/Qnom/Offset. That switch has been removed; use the Renson app
-  or the device itself to turn Breeze on or off.
 - **API keys expire** after a multi-year period set by Renson, with no way
   for the device (or this integration) to detect the expiry date in
   advance. See [Getting an API key](#getting-an-api-key-optional-but-recommended)
