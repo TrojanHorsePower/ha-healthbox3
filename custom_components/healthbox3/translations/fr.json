@@ -72,13 +72,35 @@
         "name": "{room_name} COV"
       },
       "room_aqi": {
-        "name": "{room_name} Indice de qualité de l'air"
+        "name": "{room_name} Indice de qualité de l'air",
+        "state_attributes": {
+          "qualification": {
+            "state": {
+              "very_good": "Très bon",
+              "good": "Bon",
+              "moderate": "Modéré",
+              "poor": "Mauvais",
+              "very_poor": "Très mauvais"
+            }
+          }
+        }
       },
       "room_airflow": {
         "name": "{room_name} Débit d'air"
       },
       "global_aqi": {
-        "name": "Indice de qualité de l'air"
+        "name": "Indice de qualité de l'air",
+        "state_attributes": {
+          "qualification": {
+            "state": {
+              "very_good": "Très bon",
+              "good": "Bon",
+              "moderate": "Modéré",
+              "poor": "Mauvais",
+              "very_poor": "Très mauvais"
+            }
+          }
+        }
       },
       "global_ventilation_level": {
         "name": "Niveau de ventilation"

@@ -417,6 +417,24 @@ async def test_get_errors_populates_category_for_known_prefix():
     assert errors[0].category == "Fan and main PCB"
 
 
+@pytest.mark.parametrize(
+    ("value", "expected_band"),
+    [
+        (0, "very_good"),
+        (20, "very_good"),
+        (21, "good"),
+        (40, "good"),
+        (41, "moderate"),
+        (70, "moderate"),
+        (71, "poor"),
+        (99, "poor"),
+        (100, "very_poor"),
+    ],
+)
+def test_categorize_aqi_quality_bands(value, expected_band):
+    assert api_mod.categorize_aqi_quality(value) == expected_band
+
+
 @pytest.mark.parametrize("status", [401, 403])
 async def test_auth_error_statuses_raise_authentication_error(status):
     session = _FakeSession([_FakeResponse(status)])

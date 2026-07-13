@@ -389,6 +389,53 @@ def _parse_errors(raw: list[dict[str, Any]]) -> list[DeviceError]:
     ]
 
 
+# AQI qualification bands, per Renson's own official reply (via their
+# support contact) to a direct inquiry about the index's scale - unlike
+# _ERROR_CATEGORIES above, this is first-party guidance, not a
+# third-party/community source, so it's safe to build in and reference
+# directly rather than treating it as a best-evidenced guess.
+#
+# Confirmed by Renson: this is not a fixed 0-100 scale - higher is worse,
+# and values above 100 are genuinely possible (matches real captures
+# already seen, e.g. a Bedroom sensor at 71.4+). Renson's own reply had
+# slightly overlapping boundary wording ("71-100: slecht" alongside
+# "100: zeer slecht") - resolved here as closed lower-bound bands with
+# exactly 100 falling into the worst band, almost certainly just
+# imprecise phrasing on their end rather than a deliberate overlap.
+# Renson also explicitly recommends never showing the raw number alone,
+# always paired with a qualification label - hence this being surfaced
+# as an attribute alongside, not instead of, the raw AQI value.
+#
+# Two caveats Renson also raised, not encoded in this function since
+# they're about cross-value comparison rather than a single value's
+# label - see README's Known limitations: the index is built per-room
+# from whatever sensors that room actually has, so values aren't
+# strictly 1:1 comparable between rooms with different sensor types; and
+# the whole-house index is a separate aggregation, not guaranteed equal
+# to whichever room is currently flagged as the dominant
+# (main_pollutant/room) source.
+_AQI_QUALIFICATION_BANDS: tuple[tuple[float, str], ...] = (
+    (20, "very_good"),
+    (40, "good"),
+    (70, "moderate"),
+    (99, "poor"),
+)
+_AQI_QUALIFICATION_FALLBACK = "very_poor"
+
+
+def categorize_aqi_quality(value: float) -> str:
+    """Map an AQI value to one of Renson's 5 qualification bands.
+
+    Returns one of "very_good"/"good"/"moderate"/"poor"/"very_poor" - a
+    stable key, not a display label, so callers can look up a translated
+    string for it (see strings.json's per-sensor `state_attributes`).
+    """
+    for upper_bound, label in _AQI_QUALIFICATION_BANDS:
+        if value <= upper_bound:
+            return label
+    return _AQI_QUALIFICATION_FALLBACK
+
+
 @dataclass
 class DiscoveryInfo:
     """Parsed UDP discovery response.

@@ -72,13 +72,35 @@
         "name": "{room_name} VOC"
       },
       "room_aqi": {
-        "name": "{room_name} Air quality index"
+        "name": "{room_name} Air quality index",
+        "state_attributes": {
+          "qualification": {
+            "state": {
+              "very_good": "Very good",
+              "good": "Good",
+              "moderate": "Moderate",
+              "poor": "Poor",
+              "very_poor": "Very poor"
+            }
+          }
+        }
       },
       "room_airflow": {
         "name": "{room_name} Airflow"
       },
       "global_aqi": {
-        "name": "Air quality index"
+        "name": "Air quality index",
+        "state_attributes": {
+          "qualification": {
+            "state": {
+              "very_good": "Very good",
+              "good": "Good",
+              "moderate": "Moderate",
+              "poor": "Poor",
+              "very_poor": "Very poor"
+            }
+          }
+        }
       },
       "global_ventilation_level": {
         "name": "Ventilation level"

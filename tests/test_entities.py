@@ -117,6 +117,25 @@ async def test_global_aqi_sensor_has_main_pollutant_and_room_attributes(
     assert float(global_aqi.state) == pytest.approx(45.0)
     assert global_aqi.attributes["main_pollutant"] == "indoor CO2"
     assert global_aqi.attributes["room"] == "Bedroom"
+    assert global_aqi.attributes["qualification"] == "moderate"
+
+
+async def test_room_aqi_sensor_has_qualification_attribute(
+    hass, mock_api_client, v2_data, boost_status
+):
+    """Toilet (room 1)'s AQI fixture value is 10.0 -> "very_good"."""
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v2_data.serial,
+        healthbox_data=v2_data,
+        boost_status=boost_status,
+    )
+
+    room_aqi = hass.states.get(f"sensor.{_PREFIX}_toilet_air_quality_index")
+    assert room_aqi is not None
+    assert float(room_aqi.state) == pytest.approx(10.0)
+    assert room_aqi.attributes["qualification"] == "very_good"
 
 
 async def test_global_ventilation_level_sensor_reports_state(

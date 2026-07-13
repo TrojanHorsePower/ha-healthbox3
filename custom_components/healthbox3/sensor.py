@@ -14,7 +14,7 @@ from homeassistant.const import EntityCategory, PERCENTAGE, UnitOfRatio, UnitOfT
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .api import Room, Sensor
+from .api import Room, Sensor, categorize_aqi_quality
 from .const import (
     SENSOR_TYPE_AQI,
     SENSOR_TYPE_CO2,
@@ -253,16 +253,24 @@ class Healthbox3RoomSensor(Healthbox3Entity, SensorEntity):
     @property
     @override
     def extra_state_attributes(self) -> dict[str, str] | None:
-        """Return the main pollutant, for the AQI sensor only."""
+        """Return the main pollutant and qualification band, for the AQI
+        sensor only. See `categorize_aqi_quality`'s docstring in api.py
+        for the qualification band source and caveats.
+        """
         if self._sensor_type != SENSOR_TYPE_AQI:
             return None
         sensor = self._find_sensor()
         if sensor is None:
             return None
+        attributes: dict[str, str] = {}
         main_pollutant = sensor.parameters.get("main_pollutant")
-        if main_pollutant is None or not main_pollutant.value:
-            return None
-        return {"main_pollutant": str(main_pollutant.value)}
+        if main_pollutant is not None and main_pollutant.value:
+            attributes["main_pollutant"] = str(main_pollutant.value)
+        index = sensor.parameters.get("index")
+        aqi_value = _as_float(index.value) if index is not None else None
+        if aqi_value is not None:
+            attributes["qualification"] = categorize_aqi_quality(aqi_value)
+        return attributes or None
 
 
 class Healthbox3RoomAirflowSensor(Healthbox3Entity, SensorEntity):
@@ -359,15 +367,24 @@ class Healthbox3GlobalAqiSensor(Healthbox3Entity, SensorEntity):
     @property
     @override
     def extra_state_attributes(self) -> dict[str, str] | None:
-        """Return the main pollutant and the room it was measured in."""
+        """Return the main pollutant, the room it was measured in, and the
+        qualification band. See `categorize_aqi_quality`'s docstring in
+        api.py for the qualification band source and caveats - notably,
+        this whole-house value is a separate aggregation, not guaranteed
+        equal to `room`'s own AQI value.
+        """
         sensor = self._find_sensor()
         if sensor is None:
             return None
-        attributes = {}
+        attributes: dict[str, str] = {}
         for key in ("main_pollutant", "room"):
             parameter = sensor.parameters.get(key)
             if parameter is not None and parameter.value:
                 attributes[key] = str(parameter.value)
+        index = sensor.parameters.get("index")
+        aqi_value = _as_float(index.value) if index is not None else None
+        if aqi_value is not None:
+            attributes["qualification"] = categorize_aqi_quality(aqi_value)
         return attributes or None
 
 
