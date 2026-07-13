@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Air quality index sensors (per-room and whole-house) now include a
+  `qualification` attribute (Very good/Good/Moderate/Poor/Very poor)
+  alongside the existing raw numeric value, per Renson's own official
+  guidance on how to interpret the index. See
+  [Known limitations](README.md#known-limitations) for two comparability
+  caveats Renson also raised: values aren't strictly comparable across
+  rooms with different sensor types, and the whole-house value isn't
+  necessarily equal to whichever room its attributes point at.
+
 ## [0.3.1] - 2026-07-10
 
 ### Added
