@@ -422,13 +422,22 @@ _AQI_QUALIFICATION_BANDS: tuple[tuple[float, str], ...] = (
 )
 _AQI_QUALIFICATION_FALLBACK = "very_poor"
 
+AQI_QUALIFICATION_LEVELS: tuple[str, ...] = tuple(
+    label for _, label in _AQI_QUALIFICATION_BANDS
+) + (_AQI_QUALIFICATION_FALLBACK,)
+"""Every `categorize_aqi_quality` return value, best-to-worst - the AQI
+level sensors' `options` list is derived from this rather than a
+separately hand-maintained literal, so the two can't drift apart.
+"""
+
 
 def categorize_aqi_quality(value: float) -> str:
     """Map an AQI value to one of Renson's 5 qualification bands.
 
     Returns one of "very_good"/"good"/"moderate"/"poor"/"very_poor" - a
     stable key, not a display label, so callers can look up a translated
-    string for it (see strings.json's per-sensor `state_attributes`).
+    string for it (see strings.json's per-sensor `state_attributes`, and
+    the `room_aqi_level`/`global_aqi_level` entities' own `state`).
     """
     for upper_bound, label in _AQI_QUALIFICATION_BANDS:
         if value <= upper_bound:

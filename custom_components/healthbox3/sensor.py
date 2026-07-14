@@ -14,7 +14,7 @@ from homeassistant.const import EntityCategory, PERCENTAGE, UnitOfRatio, UnitOfT
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .api import Room, Sensor, categorize_aqi_quality
+from .api import AQI_QUALIFICATION_LEVELS, Room, Sensor, categorize_aqi_quality
 from .const import (
     SENSOR_TYPE_AQI,
     SENSOR_TYPE_CO2,
@@ -174,6 +174,10 @@ async def async_setup_entry(
             entities.append(
                 Healthbox3RoomSensor(coordinator, serial, room.id, room.name, sensor.type, meta)
             )
+            if sensor.type == SENSOR_TYPE_AQI:
+                entities.append(
+                    Healthbox3RoomAqiLevelSensor(coordinator, serial, room.id, room.name)
+                )
         if _room_airflow_percentage(room) is not None:
             entities.append(
                 Healthbox3RoomAirflowSensor(coordinator, serial, room.id, room.name)
@@ -181,6 +185,7 @@ async def async_setup_entry(
 
     if any(s.type == SENSOR_TYPE_GLOBAL_AQI for s in coordinator.data.healthbox.global_sensors):
         entities.append(Healthbox3GlobalAqiSensor(coordinator, serial))
+        entities.append(Healthbox3GlobalAqiLevelSensor(coordinator, serial))
 
     if coordinator.use_v2:
         entities.append(Healthbox3GlobalVentilationLevelSensor(coordinator, serial))
@@ -271,6 +276,66 @@ class Healthbox3RoomSensor(Healthbox3Entity, SensorEntity):
         if aqi_value is not None:
             attributes["qualification"] = categorize_aqi_quality(aqi_value)
         return attributes or None
+
+
+class Healthbox3RoomAqiLevelSensor(Healthbox3Entity, SensorEntity):
+    """A room's AQI qualification band, as a selectable enum state.
+
+    Companion to Healthbox3RoomSensor's numeric AQI sensor, which keeps the
+    same qualification as an `extra_state_attributes` value (unchanged, for
+    anyone already templating off it) - this exists so the qualification can
+    be a dashboard tile's headline value instead of something only visible
+    via Developer Tools > States. A separate entity rather than swapping the
+    numeric sensor's own state, since `SensorDeviceClass.ENUM` can't carry
+    `SensorStateClass.MEASUREMENT` - swapping would drop the numeric
+    sensor's existing history/statistics.
+    """
+
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = list(AQI_QUALIFICATION_LEVELS)
+    _attr_translation_key = "room_aqi_level"
+
+    def __init__(
+        self,
+        coordinator: Healthbox3DataUpdateCoordinator,
+        serial: str,
+        room_id: int,
+        room_name: str,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, serial)
+        self._room_id = room_id
+        self._attr_translation_placeholders = {"room_name": room_name}
+        self._attr_unique_id = f"{serial}_room{room_id}_aqi_level"
+
+    def _find_sensor(self) -> Sensor | None:
+        room = next(
+            (r for r in self.coordinator.data.healthbox.rooms if r.id == self._room_id),
+            None,
+        )
+        if room is None:
+            return None
+        return next((s for s in room.sensors if s.type == SENSOR_TYPE_AQI), None)
+
+    @property
+    @override
+    def available(self) -> bool:
+        """Return whether this room's AQI sensor is reporting data."""
+        if not super().available:
+            return False
+        sensor = self._find_sensor()
+        return sensor is not None and sensor.is_available
+
+    @property
+    @override
+    def native_value(self) -> str | None:
+        """Return the room's current AQI qualification band."""
+        sensor = self._find_sensor()
+        if sensor is None:
+            return None
+        index = sensor.parameters.get("index")
+        aqi_value = _as_float(index.value) if index is not None else None
+        return categorize_aqi_quality(aqi_value) if aqi_value is not None else None
 
 
 class Healthbox3RoomAirflowSensor(Healthbox3Entity, SensorEntity):
@@ -386,6 +451,57 @@ class Healthbox3GlobalAqiSensor(Healthbox3Entity, SensorEntity):
         if aqi_value is not None:
             attributes["qualification"] = categorize_aqi_quality(aqi_value)
         return attributes or None
+
+
+class Healthbox3GlobalAqiLevelSensor(Healthbox3Entity, SensorEntity):
+    """The whole-house AQI qualification band, as a selectable enum state.
+
+    Companion to Healthbox3GlobalAqiSensor, the same way
+    Healthbox3RoomAqiLevelSensor complements the per-room numeric sensor -
+    see that class's docstring for why this is a separate entity rather
+    than a change to the existing numeric sensor's own state.
+    """
+
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = list(AQI_QUALIFICATION_LEVELS)
+    _attr_translation_key = "global_aqi_level"
+
+    def __init__(
+        self, coordinator: Healthbox3DataUpdateCoordinator, serial: str
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, serial)
+        self._attr_unique_id = f"{serial}_global_aqi_level"
+
+    def _find_sensor(self) -> Sensor | None:
+        return next(
+            (
+                s
+                for s in self.coordinator.data.healthbox.global_sensors
+                if s.type == SENSOR_TYPE_GLOBAL_AQI
+            ),
+            None,
+        )
+
+    @property
+    @override
+    def available(self) -> bool:
+        """Return whether the global AQI sensor is reporting data."""
+        if not super().available:
+            return False
+        sensor = self._find_sensor()
+        return sensor is not None and sensor.is_available
+
+    @property
+    @override
+    def native_value(self) -> str | None:
+        """Return the current whole-house AQI qualification band."""
+        sensor = self._find_sensor()
+        if sensor is None:
+            return None
+        index = sensor.parameters.get("index")
+        aqi_value = _as_float(index.value) if index is not None else None
+        return categorize_aqi_quality(aqi_value) if aqi_value is not None else None
 
 
 class Healthbox3GlobalVentilationLevelSensor(Healthbox3Entity, SensorEntity):

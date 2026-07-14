@@ -85,6 +85,16 @@
           }
         }
       },
+      "room_aqi_level": {
+        "name": "{room_name} AQI-niveau",
+        "state": {
+          "very_good": "Zeer goed",
+          "good": "Goed",
+          "moderate": "Matig",
+          "poor": "Slecht",
+          "very_poor": "Zeer slecht"
+        }
+      },
       "room_airflow": {
         "name": "{room_name} Luchtstroom"
       },
@@ -100,6 +110,16 @@
               "very_poor": "Zeer slecht"
             }
           }
+        }
+      },
+      "global_aqi_level": {
+        "name": "AQI-niveau",
+        "state": {
+          "very_good": "Zeer goed",
+          "good": "Goed",
+          "moderate": "Matig",
+          "poor": "Slecht",
+          "very_poor": "Zeer slecht"
         }
       },
       "global_ventilation_level": {

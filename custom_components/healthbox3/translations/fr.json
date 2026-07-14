@@ -85,6 +85,16 @@
           }
         }
       },
+      "room_aqi_level": {
+        "name": "{room_name} Niveau IQA",
+        "state": {
+          "very_good": "Très bon",
+          "good": "Bon",
+          "moderate": "Modéré",
+          "poor": "Mauvais",
+          "very_poor": "Très mauvais"
+        }
+      },
       "room_airflow": {
         "name": "{room_name} Débit d'air"
       },
@@ -100,6 +110,16 @@
               "very_poor": "Très mauvais"
             }
           }
+        }
+      },
+      "global_aqi_level": {
+        "name": "Niveau IQA",
+        "state": {
+          "very_good": "Très bon",
+          "good": "Bon",
+          "moderate": "Modéré",
+          "poor": "Mauvais",
+          "very_poor": "Très mauvais"
         }
       },
       "global_ventilation_level": {

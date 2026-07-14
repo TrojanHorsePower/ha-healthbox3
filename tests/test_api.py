@@ -435,6 +435,20 @@ def test_categorize_aqi_quality_bands(value, expected_band):
     assert api_mod.categorize_aqi_quality(value) == expected_band
 
 
+def test_aqi_qualification_levels_cover_every_band_best_to_worst():
+    """The AQI level sensors' `options` list is derived from this constant -
+    it must list every value `categorize_aqi_quality` can return, in the
+    same best-to-worst order as the qualification bands.
+    """
+    assert api_mod.AQI_QUALIFICATION_LEVELS == (
+        "very_good",
+        "good",
+        "moderate",
+        "poor",
+        "very_poor",
+    )
+
+
 @pytest.mark.parametrize("status", [401, 403])
 async def test_auth_error_statuses_raise_authentication_error(status):
     session = _FakeSession([_FakeResponse(status)])

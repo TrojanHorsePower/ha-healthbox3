@@ -138,6 +138,30 @@ async def test_room_aqi_sensor_has_qualification_attribute(
     assert room_aqi.attributes["qualification"] == "very_good"
 
 
+async def test_room_and_global_aqi_level_sensors_report_qualification_state(
+    hass, mock_api_client, v2_data, boost_status
+):
+    """The companion "AQI level" enum sensors mirror the numeric AQI
+    sensors' `qualification` attribute as their own primary state - Toilet
+    (room 1) is 10.0 -> "very_good", global is 45.0 -> "moderate".
+    """
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v2_data.serial,
+        healthbox_data=v2_data,
+        boost_status=boost_status,
+    )
+
+    room_level = hass.states.get(f"sensor.{_PREFIX}_toilet_aqi_level")
+    assert room_level is not None
+    assert room_level.state == "very_good"
+
+    global_level = hass.states.get(f"sensor.{_PREFIX}_aqi_level")
+    assert global_level is not None
+    assert global_level.state == "moderate"
+
+
 async def test_global_ventilation_level_sensor_reports_state(
     hass, mock_api_client, v2_data, boost_status, device_decision
 ):
