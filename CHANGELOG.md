@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New `AQI level` sensors (per-room and whole-house), showing the same
+  qualification band (Very good/Good/Moderate/Poor/Very poor) already
+  available as the numeric AQI sensors' `qualification` attribute, but as
+  their own primary, dashboard-friendly state - the numeric sensors are
+  unchanged, so anything already graphing AQI history keeps working. See
+  [Known limitations](README.md#known-limitations) for the same
+  comparability caveats that apply to the `qualification` attribute.
+
 ## [0.3.2] - 2026-07-13
 
 ### Added

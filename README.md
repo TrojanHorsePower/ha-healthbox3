@@ -37,7 +37,10 @@ taking that on, please open a GitHub issue to discuss it.
 - Per-room sensors for whichever of temperature, humidity, CO2, VOC and air
   quality index your device's hardware actually reports (varies by room).
   Each air quality index reading is paired with a qualification label
-  (Very good/Good/Moderate/Poor/Very poor), per Renson's own guidance -
+  (Very good/Good/Moderate/Poor/Very poor), per Renson's own guidance - both
+  as a `qualification` attribute on the numeric sensor, and as a
+  standalone `AQI level` sensor whose own state is that label, for a
+  dashboard tile that reads "Good" at a glance instead of a raw number -
   see [Known limitations](#known-limitations) for two comparability
   caveats.
 - A whole-house air quality index sensor, and a whole-house ventilation
@@ -202,8 +205,10 @@ v1-only functionality and prompted you to reauthenticate with a new key.
 | `sensor` | `<room> CO2` | Only created for rooms with a CO2 sensor; reads "unavailable" if the device reports it as not-yet-sampled |
 | `sensor` | `<room> VOC` | Only created for rooms with a VOC sensor |
 | `sensor` | `<room> Air quality index` | Only created for rooms with an air quality sensor; exposes `main_pollutant` when set, plus a `qualification` band (see [Known limitations](#known-limitations)) |
+| `sensor` | `<room> AQI level` | That same qualification band (Very good/Good/Moderate/Poor/Very poor) as its own state, for dashboards - created alongside `<room> Air quality index` |
 | `sensor` | `<room> Airflow` | Current airflow as % of that room's rated (nominal) flow; not capped at 100% - only created for rooms reporting both underlying values |
 | `sensor` | `Air quality index` | Whole-house AQI; exposes `main_pollutant`, `room`, and a `qualification` band (see [Known limitations](#known-limitations)) |
+| `sensor` | `AQI level` | That same whole-house qualification band as its own state, for dashboards - created alongside `Air quality index` |
 | `sensor` | `Ventilation level` | Whole-house current ventilation level, as a percentage; not capped at 100% - requires an active API key |
 | `sensor` | `Firmware version` | The device's currently installed firmware version - diagnostic entity, requires an active API key |
 | `sensor` | `Device errors` | Count of currently-active device-reported errors, plus the most recent one's details as attributes - diagnostic entity, requires an active API key; each active error also creates a repair issue (**Settings > Repairs**) |
@@ -392,15 +397,15 @@ automatically once it's reachable again - no restart required.
   ever returned empty), so this mapping hasn't been cross-checked against
   a real populated response. Treat the category as a helpful hint, not a
   guarantee; the raw code and description are always shown alongside it.
-- **The AQI `qualification` band isn't necessarily comparable across
-  rooms, or between a room and the whole-house value.** Per Renson's own
-  guidance, each air quality index is built from whatever sensors that
-  particular room has, so two rooms with different sensor types aren't
-  strictly 1:1 comparable even at the same numeric value. The whole-house
-  AQI sensor is a separate aggregation, not necessarily equal to the
-  value of whichever room its `main_pollutant`/`room` attributes
-  currently point at - those only indicate the current greatest
-  influence, not equality.
+- **The AQI `qualification` band (and the `AQI level` sensors showing that
+  same band as their state) isn't necessarily comparable across rooms, or
+  between a room and the whole-house value.** Per Renson's own guidance,
+  each air quality index is built from whatever sensors that particular
+  room has, so two rooms with different sensor types aren't strictly 1:1
+  comparable even at the same numeric value. The whole-house AQI sensor is
+  a separate aggregation, not necessarily equal to the value of whichever
+  room its `main_pollutant`/`room` attributes currently point at - those
+  only indicate the current greatest influence, not equality.
 
 ## Troubleshooting
 
