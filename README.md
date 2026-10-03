@@ -175,7 +175,10 @@ API key from Renson:
 3. When you receive the key, paste it into the "API key" field during setup
    (or via Reconfigure/Reauthenticate if you're adding it later), and the
    integration will activate it with the device and verify it before
-   saving - if activation fails, you'll see an error and can retry.
+   saving - if activation fails, you'll see an error and can retry. Connection
+   failures are reported separately from rejected keys. Successful activation
+   acknowledgements do not have to contain JSON, and the integration polls
+   key status up to six times with two-second delays to allow activation to finish.
 
 **Already activated the key yourself** (e.g. by POSTing it to
 `/v2/api/api_key` directly, per Renson's docs, before installing this
@@ -252,7 +255,7 @@ attribute on the entity, so you can see what the device actually received
 even though the slider itself reads a clean 0-100.
 
 **Duration is a preset picker**, not exact minutes: `5 min`, `10 min`,
-`15 min`, `30 min`, `45 min`, `1 hour`, `2 hours`, `4 hours` - a fixed list,
+`15 min`, `20 min`, `30 min`, `45 min`, `1 hour`, `2 hours`, `4 hours` - a fixed list,
 not an arbitrary custom duration (5 minutes is also the shortest boost
 Renson's own app offers). Pick one from the fan's preset dropdown; it's
 converted to the device's native seconds-based timeout at the boundary.
@@ -340,6 +343,13 @@ otherwise `/v1/api/data/current`. Boost status is fetched per room on the
 same cycle (it's a separate endpoint from the main data call). If the
 device goes offline, affected entities go unavailable cleanly and recover
 automatically once it's reachable again - no restart required.
+
+Requests are serialized per client to avoid simultaneous room requests. A read
+that fails with a connection error is retried once after one second. Writes
+are never automatically replayed, because repeating a boost command restarts
+its timer. A complete update is limited to 60 seconds, cancelling unfinished
+requests if the device disappears partway through the update. Persistent
+connection failures still make affected entities unavailable.
 
 ## Known limitations
 

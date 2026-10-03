@@ -136,6 +136,7 @@ BOOST_DURATION_PRESETS: dict[str, int] = {
     "5 min": 300,
     "10 min": 600,
     "15 min": 900,
+    "20 min": 1200,
     "30 min": 1800,
     "45 min": 2700,
     "1 hour": 3600,

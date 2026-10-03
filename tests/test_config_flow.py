@@ -6,6 +6,8 @@ from contextlib import contextmanager
 from dataclasses import replace
 from unittest.mock import AsyncMock, patch
 
+import pytest
+
 from homeassistant.config_entries import (
     SOURCE_DHCP,
     SOURCE_INTEGRATION_DISCOVERY,
@@ -927,3 +929,86 @@ async def test_reauth_flow_activation_succeeds_but_status_reports_invalid(
         assert result["type"] is FlowResultType.FORM
         assert result["step_id"] == "reauth_confirm"
         assert result["errors"] == {"base": "invalid_api_key"}
+
+
+@pytest.mark.parametrize("source", [SOURCE_USER, SOURCE_RECONFIGURE, SOURCE_REAUTH])
+@pytest.mark.parametrize("phase", ["activation", "status"])
+@pytest.mark.parametrize(
+    ("failure", "expected"),
+    [
+        (api_mod.Healthbox3ConnectionError("timeout"), "cannot_connect"),
+        (api_mod.Healthbox3AuthenticationError("rejected"), "invalid_api_key"),
+        (api_mod.Healthbox3InvalidResponseError("bad JSON"), "unknown"),
+    ],
+)
+async def test_key_validation_errors_preserve_cause(
+    hass, v1_data, source, phase, failure, expected
+):
+    entry = None
+    with _patch_client() as mock_cls:
+        client = mock_cls.return_value
+        client.async_get_v1_data_current.return_value = v1_data
+        if phase == "activation":
+            client.async_activate_api_key.side_effect = failure
+        else:
+            client.async_get_api_key_status.side_effect = failure
+        if source == SOURCE_USER:
+            result = await hass.config_entries.flow.async_init(
+                DOMAIN, context={"source": source}
+            )
+            result = await hass.config_entries.flow.async_configure(
+                result["flow_id"], {CONF_HOST: "192.0.2.1"}
+            )
+        else:
+            entry = make_config_entry(hass, serial=v1_data.serial, api_key="oldkey")
+            result = await hass.config_entries.flow.async_init(
+                DOMAIN,
+                context={"source": source, "entry_id": entry.entry_id},
+                data=entry.data if source == SOURCE_REAUTH else None,
+            )
+        user_input = {CONF_API_KEY: "newkey"}
+        if source == SOURCE_RECONFIGURE:
+            user_input[CONF_HOST] = "192.0.2.1"
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], user_input
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["errors"] == {"base": expected}
+        if entry:
+            assert entry.data[CONF_API_KEY] == "oldkey"
+        client.async_activate_api_key.assert_awaited_once_with("newkey")
+
+
+async def test_activation_waits_for_device_without_reposting_key():
+    from custom_components.healthbox3.config_flow import Healthbox3ConfigFlow
+
+    pending = api_mod.ApiKeyStatus(
+        state="empty", disable_telemetry_data_allowed=False,
+        local_sensor_data_allowed=False,
+    )
+    valid = api_mod.ApiKeyStatus(
+        state="valid", disable_telemetry_data_allowed=True,
+        local_sensor_data_allowed=True,
+    )
+    with _patch_client() as mock_cls:
+        client = mock_cls.return_value
+        client.async_get_api_key_status.side_effect = [pending, pending, valid]
+        assert await Healthbox3ConfigFlow()._async_validate_api_key(client, "key") == {}
+        client.async_activate_api_key.assert_awaited_once_with("key")
+        assert client.async_get_api_key_status.await_count == 3
+
+
+async def test_activation_wait_is_bounded():
+    from custom_components.healthbox3.config_flow import Healthbox3ConfigFlow
+
+    with _patch_client() as mock_cls:
+        client = mock_cls.return_value
+        client.async_get_api_key_status.return_value = api_mod.ApiKeyStatus(
+            state="empty", disable_telemetry_data_allowed=False,
+            local_sensor_data_allowed=False,
+        )
+        assert await Healthbox3ConfigFlow()._async_validate_api_key(client, "key") == {
+            "base": "invalid_api_key"
+        }
+        client.async_activate_api_key.assert_awaited_once_with("key")
+        assert client.async_get_api_key_status.await_count == 6

@@ -40,6 +40,9 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+# Bound the whole poll when a device disappears partway through serialized reads.
+_UPDATE_TIMEOUT = 60.0
+
 # Confirmed real values for DeviceError.severity - anything else falls
 # back to WARNING rather than raising, since a defensive default here is
 # safer than crashing a coordinator update over a device sending a
@@ -143,23 +146,24 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
 
     @override
     async def _async_update_data(self) -> Healthbox3Data:
-        healthbox = await self._async_get_healthbox_data()
-        boost = await self._async_get_boost_data(healthbox)
-        decision = await self._async_get_decision_data()
-        breeze = await self._async_get_breeze_data()
-        room_decisions = await self._async_get_room_decisions_data()
-        firmware_version = await self._async_get_firmware_version_data()
-        errors = await self._async_get_errors_data()
-        self._async_reconcile_error_issues(errors)
-        return Healthbox3Data(
-            healthbox=healthbox,
-            boost=boost,
-            decision=decision,
-            breeze=breeze,
-            room_decisions=room_decisions,
-            firmware_version=firmware_version,
-            errors=errors,
-        )
+        async with asyncio.timeout(_UPDATE_TIMEOUT):
+            healthbox = await self._async_get_healthbox_data()
+            boost = await self._async_get_boost_data(healthbox)
+            decision = await self._async_get_decision_data()
+            breeze = await self._async_get_breeze_data()
+            room_decisions = await self._async_get_room_decisions_data()
+            firmware_version = await self._async_get_firmware_version_data()
+            errors = await self._async_get_errors_data()
+            self._async_reconcile_error_issues(errors)
+            return Healthbox3Data(
+                healthbox=healthbox,
+                boost=boost,
+                decision=decision,
+                breeze=breeze,
+                room_decisions=room_decisions,
+                firmware_version=firmware_version,
+                errors=errors,
+            )
 
     async def _async_get_decision_data(self) -> DeviceDecision | None:
         """Fetch `/v1/decision`, tolerating failure the same way boost does.

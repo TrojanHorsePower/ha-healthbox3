@@ -84,13 +84,14 @@ def test_percentage_to_level(percentage, expected_level):
         (300, "5 min"),
         (600, "10 min"),
         (900, "15 min"),
+        (1200, "20 min"),
         (1800, "30 min"),
         (2700, "45 min"),
         (3600, "1 hour"),
         (7200, "2 hours"),
         (14400, "4 hours"),
         (400, "5 min"),  # nearest to 300, not 600
-        (1000, "15 min"),  # nearest to 900, not 1800
+        (1000, "15 min"),  # nearest to 900, not 1200
         (2000, "30 min"),  # nearest to 1800, not 2700
         (5000, "1 hour"),  # nearest to 3600, not 7200
         (10000, "2 hours"),  # nearest to 7200, not 14400
@@ -106,6 +107,7 @@ def test_preset_mode_for_timeout_snaps_to_nearest(timeout, expected_preset):
         ("5 min", 300),
         ("10 min", 600),
         ("15 min", 900),
+        ("20 min", 1200),
         ("30 min", 1800),
         ("45 min", 2700),
         ("1 hour", 3600),

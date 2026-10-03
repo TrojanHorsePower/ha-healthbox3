@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from unittest.mock import AsyncMock, patch
 
 from homeassistant.config_entries import SOURCE_REAUTH
@@ -605,3 +606,42 @@ async def test_invalid_response_disambiguated_via_key_status(hass, v2_data):
 
     assert coordinator.use_v2 is True  # not downgraded - key is still valid
     assert coordinator.last_update_success is False
+
+
+async def test_poll_timeout_cancels_queued_reads_and_next_poll_recovers(
+    hass, v1_data, boost_status, monkeypatch
+):
+    """A device lost mid-poll must not leave requests running into the next poll."""
+    monkeypatch.setattr(
+        "custom_components.healthbox3.coordinator._UPDATE_TIMEOUT", 0.01
+    )
+    entry = make_config_entry(hass, serial=v1_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v1_data_current.return_value = v1_data
+    pending = 0
+    cancelled = 0
+
+    async def stalled_boost(room_id):
+        nonlocal pending, cancelled
+        pending += 1
+        try:
+            await asyncio.Event().wait()
+        finally:
+            pending -= 1
+            cancelled += 1
+
+    client.async_get_boost.side_effect = stalled_boost
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=False)
+    await coordinator.async_refresh()
+    assert coordinator.last_update_success is False
+    assert pending == 0
+    assert cancelled == len(v1_data.rooms)
+
+    client.async_get_boost.side_effect = None
+    client.async_get_boost.return_value = boost_status
+    monkeypatch.setattr(
+        "custom_components.healthbox3.coordinator._UPDATE_TIMEOUT", 60.0
+    )
+    await coordinator.async_refresh()
+    assert coordinator.last_update_success is True
+    assert len(coordinator.data.boost) == len(v1_data.rooms)

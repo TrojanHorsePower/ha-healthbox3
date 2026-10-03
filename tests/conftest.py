@@ -286,3 +286,12 @@ async def setup_integration(
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
     return entry
+
+
+@pytest.fixture(autouse=True)
+def no_retry_delays(monkeypatch):
+    """Exercise real retry paths without slowing down the test suite."""
+    monkeypatch.setattr(api_mod, "_READ_RETRY_DELAY", 0)
+    monkeypatch.setattr(
+        "custom_components.healthbox3.config_flow._KEY_STATUS_RETRY_DELAY", 0
+    )

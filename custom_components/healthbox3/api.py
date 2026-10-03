@@ -33,6 +33,7 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 _REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=10)
+_READ_RETRY_DELAY = 1.0
 
 
 class Healthbox3Error(Exception):
@@ -713,11 +714,34 @@ class Healthbox3ApiClient:
         self._host = host
         self._session = session
         self._base_url = f"http://{host}"
+        self._request_lock = asyncio.Lock()
 
     async def _request(
         self,
         method: str,
         path: str,
+        **kwargs: Any,
+    ) -> Any:
+        # The embedded HTTP server can be overwhelmed by parallel room reads.
+        # Keep retries inside the lock so queued requests cannot form a burst
+        # while the device is recovering. Never replay a write: boost commands
+        # restart their timers even when the requested value is unchanged.
+        async with self._request_lock:
+            try:
+                return await self._request_once(method, path, **kwargs)
+            except Healthbox3ConnectionError:
+                if method != "GET":
+                    raise
+                _LOGGER.debug("Retrying GET %s after a connection failure", path)
+                await asyncio.sleep(_READ_RETRY_DELAY)
+                return await self._request_once(method, path, **kwargs)
+
+    async def _request_once(
+        self,
+        method: str,
+        path: str,
+        *,
+        expect_json: bool = True,
         **kwargs: Any,
     ) -> Any:
         url = f"{self._base_url}{path}"
@@ -729,7 +753,7 @@ class Healthbox3ApiClient:
                     raise Healthbox3AuthenticationError(
                         f"{method} {path} returned HTTP {resp.status}"
                     )
-                if resp.status != 200:
+                if not 200 <= resp.status < 300:
                     raise Healthbox3InvalidResponseError(
                         f"{method} {path} returned HTTP {resp.status}"
                     )
@@ -743,7 +767,7 @@ class Healthbox3ApiClient:
                 f"Error connecting to {self._host}: {err}"
             ) from err
 
-        if not text:
+        if not expect_json or not text:
             return None
         try:
             return json.loads(text)
@@ -803,6 +827,7 @@ class Healthbox3ApiClient:
             "POST",
             API_V2_API_KEY,
             data=json.dumps(api_key),
+            expect_json=False,
             headers={"Content-Type": "application/json"},
         )
 

@@ -268,3 +268,26 @@ async def test_automation_boost_all_partial_failure_logs_error(
         )
 
     assert any("Failed to start boost for rooms" in r.message for r in caplog.records)
+
+
+async def test_automation_preserves_twenty_minute_boost(
+    hass, mock_api_client, v1_data
+):
+    """Migrated 20-minute actions send a device-side 1,200-second timeout."""
+    _install_stateful_boost_mock(mock_api_client, [r.id for r in v1_data.rooms])
+    await setup_integration(
+        hass, mock_api_client, serial=v1_data.serial,
+        api_key=None, healthbox_data=v1_data,
+    )
+    await _fire_automation(
+        hass,
+        {"action": "fan.turn_on", "target": {"entity_id": _ROOM1_ENTITY},
+         "data": {"percentage": 76, "preset_mode": "20 min"}},
+    )
+    mock_api_client.async_set_boost.assert_awaited_once_with(
+        1, enable=True, level=_percentage_to_level(76), timeout=1200
+    )
+    state = hass.states.get(_ROOM1_ENTITY)
+    assert state.state == "on"
+    assert state.attributes["preset_mode"] == "20 min"
+    assert state.attributes["remaining"] == 1200

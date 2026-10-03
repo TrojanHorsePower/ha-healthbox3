@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- API-key setup, reconfiguration, and reauthentication distinguish connection
+  failures and unexpected responses from rejected keys.
+- Key activation accepts successful plain-text or empty acknowledgements and
+  checks status up to six times, two seconds apart, without resubmitting the key.
+- Device requests run one at a time per client. Failed reads are retried once
+  after one second; writes are never replayed. Complete polls are limited to
+  60 seconds so interrupted updates cannot accumulate a long queue of requests.
+
+### Added
+
+- A 20-minute boost preset for existing automations that use this duration.
+
 ## [0.3.3] - 2026-07-14
 
 ### Added

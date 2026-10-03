@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 
+import aiohttp
 import pytest
 
 from custom_components.healthbox3 import api as api_mod
@@ -468,7 +469,7 @@ async def test_bare_500_empty_body_raises_invalid_response_error():
 
 
 async def test_connection_error_wrapped():
-    session = _FakeSession([TimeoutError()])
+    session = _FakeSession([TimeoutError(), TimeoutError()])
     client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
 
     with pytest.raises(api_mod.Healthbox3ConnectionError):
@@ -824,3 +825,92 @@ async def test_broadcast_discovery_protocol_error_received_does_not_raise():
     protocol = api_mod._BroadcastDiscoveryProtocol()
 
     protocol.error_received(OSError("boom"))  # must not raise
+
+
+@pytest.mark.parametrize("failure", [TimeoutError(), aiohttp.ClientConnectionError()])
+async def test_transient_read_failure_recovers(failure, v2_data_raw):
+    session = _FakeSession([failure, _FakeResponse(200, json.dumps(v2_data_raw))])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    data = await client.async_get_v2_data_current()
+
+    assert data.serial == v2_data_raw["serial"]
+    assert len(session.calls) == 2
+
+
+@pytest.mark.parametrize("method", ["PUT", "POST"])
+async def test_write_failure_is_never_replayed(method):
+    session = _FakeSession([TimeoutError()])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    with pytest.raises(api_mod.Healthbox3ConnectionError):
+        await client._request(method, "/test", json={"enable": True})
+
+    assert len(session.calls) == 1
+
+
+@pytest.mark.parametrize("status", [200, 201, 204])
+async def test_activation_accepts_success_without_json(status):
+    session = _FakeSession([_FakeResponse(status, "API key received")])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+
+    await client.async_activate_api_key("test-key")
+
+    assert len(session.calls) == 1
+    assert json.loads(session.calls[0][2]["data"]) == "test-key"
+    assert "expect_json" not in session.calls[0][2]
+
+
+async def test_requests_are_serialized_and_cancelled_waiter_does_not_block():
+    entered = asyncio.Event()
+    release = asyncio.Event()
+    active = 0
+    maximum = 0
+
+    class SlowResponse(_FakeRequestCM):
+        async def __aenter__(self):
+            nonlocal active, maximum
+            active += 1
+            maximum = max(maximum, active)
+            entered.set()
+            return await super().__aenter__()
+
+        async def __aexit__(self, *exc):
+            nonlocal active
+            active -= 1
+            return False
+
+    class SlowBody(_FakeResponse):
+        async def text(self):
+            await release.wait()
+            return "{}"
+
+    class SlowSession(_FakeSession):
+        def request(self, method, url, **kwargs):
+            self.calls.append((method, url, kwargs))
+            return SlowResponse(SlowBody(200))
+
+    session = SlowSession([])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+    first = asyncio.create_task(client._request("GET", "/first"))
+    await entered.wait()
+    cancelled = asyncio.create_task(client._request("GET", "/cancelled"))
+    third = asyncio.create_task(client._request("GET", "/third"))
+    await asyncio.sleep(0)
+    cancelled.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await cancelled
+    assert len(session.calls) == 1
+    release.set()
+    assert await asyncio.gather(first, third) == [{}, {}]
+    assert maximum == 1
+    assert len(session.calls) == 2
+
+
+async def test_cancellation_of_active_request_releases_lock():
+    session = _FakeSession([asyncio.CancelledError(), _FakeResponse(200, "{}")])
+    client = api_mod.Healthbox3ApiClient("192.0.2.1", session)
+    with pytest.raises(asyncio.CancelledError):
+        await client._request("GET", "/cancelled")
+    assert await client._request("GET", "/next") == {}
+    assert len(session.calls) == 2
