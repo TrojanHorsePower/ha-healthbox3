@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.4] - 2026-10-03
 
+All changes in this release contributed by
+[@AlirezaT](https://github.com/AlirezaT) in
+[#1](https://github.com/TrojanHorsePower/ha-healthbox3/pull/1).
+
 ### Fixed
 
 - API-key setup, reconfiguration, and reauthentication distinguish connection
