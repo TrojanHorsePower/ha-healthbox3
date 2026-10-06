@@ -223,6 +223,10 @@
     "device_error": {
       "title": "Healthbox meldde een {severity}-fout",
       "description": "De Healthbox meldde een fout in categorie {category} (code {code}): {description}\n\nGemeld om {time}. Dit kan niet vanuit Home Assistant worden gewist - gebruik de Renson-app of het apparaat zelf om dit te bevestigen of op te lossen. Raadpleeg de Renson-app of neem contact op met uw installateur voor gedetailleerde probleemoplossingsstappen. Dit issue verdwijnt automatisch zodra het apparaat dit niet langer meldt."
+    },
+    "device_error_unknown": {
+      "title": "Healthbox meldde een {severity}-storing",
+      "description": "De Healthbox meldde een storing (code {code}): {description}\n\nGemeld om {time}. Dit kan niet vanuit Home Assistant worden gewist - gebruik de Renson-app of het apparaat zelf om dit te bevestigen of op te lossen. Raadpleeg de Renson-app of neem contact op met uw installateur voor gedetailleerde stappen. Deze melding verdwijnt automatisch zodra het apparaat ze niet meer rapporteert."
     }
   }
 }

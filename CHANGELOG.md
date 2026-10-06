@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Device fault repair issues are titled by the part of the unit they concern
+  (for example "Healthbox: Control valves fault"), not a generic "reported a
+  critical error". Faults with an unrecognised code keep the generic title.
+  Codes 100 and 101 are now listed as control valves, and 102 as valve
+  collectors. The category names are in English for now.
 - Each ventilated room is now its own device, linked under the Healthbox unit,
   instead of every entity sitting on one device. Existing entities keep their
   entity IDs and history and move to their room's device automatically.

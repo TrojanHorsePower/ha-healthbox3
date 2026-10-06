@@ -365,9 +365,9 @@ async def test_get_errors_rejects_unexpected_shape():
 @pytest.mark.parametrize(
     ("code", "expected_category"),
     [
-        ("10099", "Control valves / valve collectors"),
-        ("10199", "Control valves / valve collectors"),
-        ("10299", "Control valves / valve collectors"),
+        ("10099", "Control valves"),
+        ("10199", "Control valves"),
+        ("10299", "Valve collectors"),
         ("10399", "Power"),
         ("10499", "Valve collectors"),
         ("10599", "Air leaks"),

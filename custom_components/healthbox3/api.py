@@ -427,10 +427,15 @@ def _parse_room_decisions(raw: dict[str, Any]) -> dict[int, RoomDecision]:
 # error occurs and gets cross-checked. Deliberately just a short
 # category label per prefix, not Renson's own (copyrighted) per-code
 # troubleshooting text.
+#
+# 100 and 101 are the control valves and 102 the valve collectors; the
+# help-center wording had all three as one combined label. That split comes
+# from a cross-check against the error-code index inside Renson's own app,
+# which is not in this repository, so it is not independently verified here.
 _ERROR_CATEGORIES: dict[str, str] = {
-    "100": "Control valves / valve collectors",
-    "101": "Control valves / valve collectors",
-    "102": "Control valves / valve collectors",
+    "100": "Control valves",
+    "101": "Control valves",
+    "102": "Valve collectors",
     "103": "Power",
     "104": "Valve collectors",
     "105": "Air leaks",
@@ -447,6 +452,9 @@ _ERROR_CATEGORIES: dict[str, str] = {
 }
 
 
+UNKNOWN_ERROR_CATEGORY = "Unknown"
+
+
 def _categorize_error_code(code: str) -> str:
     """Map an error code's first 3 digits to a short category name.
 
@@ -455,7 +463,7 @@ def _categorize_error_code(code: str) -> str:
     raises, since this is a best-effort label layered on top of the
     always-available raw code, not something anything else depends on.
     """
-    return _ERROR_CATEGORIES.get(code[:3], "Unknown")
+    return _ERROR_CATEGORIES.get(code[:3], UNKNOWN_ERROR_CATEGORY)
 
 
 @dataclass

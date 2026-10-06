@@ -471,11 +471,16 @@ a boost's percentage or preset while it's already running restarts its
 countdown from the new full duration rather than adjusting smoothly in
 place. See [Boost control](#boost-control) for the full explanation.
 
-**Settings > Repairs shows a "Healthbox reported a ... error" issue.** This
-is the device itself reporting a fault (e.g. a sensor problem), surfaced
-as-is - not something this integration detected or can diagnose further.
-See [Known limitations](#known-limitations) above for why it can't be
-cleared from Home Assistant.
+**Settings > Repairs shows a "Healthbox: ... fault" issue.** This is the
+device itself reporting a fault, surfaced as-is - not something this
+integration detected or can diagnose further. The title names the part of
+the unit the code belongs to (for example "Healthbox: Control valves
+fault"). That category comes from the first three digits of the code, and
+is a best-effort label, not a diagnosis. The device's own description and
+the raw code are shown in the issue, and the Renson app or your installer
+has the detail. A code outside the table gets the generic title "Healthbox
+reported a ... fault". See [Known limitations](#known-limitations) above for
+why it can't be cleared from Home Assistant.
 
 **Entities disappeared after previously working** (any entity that
 requires an active API key - see [Known limitations](#known-limitations)

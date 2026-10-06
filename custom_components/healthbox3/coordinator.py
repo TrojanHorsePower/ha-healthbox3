@@ -29,6 +29,7 @@ from .api import (
     Healthbox3Error,
     Healthbox3InvalidResponseError,
     HealthboxData,
+    UNKNOWN_ERROR_CATEGORY,
     RoomDecision,
     WifiStatus,
     async_discover_broadcast,
@@ -356,7 +357,11 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
                 issue_id,
                 is_fixable=False,
                 severity=_ERROR_SEVERITY.get(error.severity, ir.IssueSeverity.WARNING),
-                translation_key="device_error",
+                translation_key=(
+                    "device_error_unknown"
+                    if error.category == UNKNOWN_ERROR_CATEGORY
+                    else "device_error"
+                ),
                 translation_placeholders={
                     "code": error.code,
                     "description": error.description,

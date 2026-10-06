@@ -296,7 +296,8 @@ async def test_device_error_creates_repair_issue(hass, v2_data, boost_status, de
     assert critical is not None
     assert critical.severity is ir.IssueSeverity.CRITICAL
     assert critical.is_fixable is False
-    assert critical.translation_key == "device_error"
+    # E042 is not a code in the category table, so it gets the generic title.
+    assert critical.translation_key == "device_error_unknown"
     assert critical.translation_placeholders == {
         "code": "E042",
         "description": "Sensor fault in room 3",
@@ -645,3 +646,27 @@ async def test_poll_timeout_cancels_queued_reads_and_next_poll_recovers(
     await coordinator.async_refresh()
     assert coordinator.last_update_success is True
     assert len(coordinator.data.boost) == len(v1_data.rooms)
+
+
+async def test_known_error_code_gets_its_category_title(hass, v2_data, boost_status):
+    entry = make_config_entry(hass, serial=v2_data.serial)
+    client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
+    client.async_get_v2_data_current.return_value = v2_data
+    client.async_get_boost.return_value = boost_status
+    client.async_get_errors.return_value = [
+        api_mod.DeviceError(
+            code="10199",
+            time="2026-01-15T08:30:00Z",
+            description="Valve fault",
+            association_id="valve1",
+            severity="critical",
+            category="Control valves",
+        )
+    ]
+
+    coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=True)
+    await coordinator.async_refresh()
+
+    issue = ir.async_get(hass).async_get_issue(DOMAIN, "device_error_valve1")
+    assert issue.translation_key == "device_error"
+    assert issue.translation_placeholders["category"] == "Control valves"
