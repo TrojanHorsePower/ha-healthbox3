@@ -583,3 +583,78 @@ async def test_boost_all_fan_falls_back_to_staged_when_rooms_disagree(
     state = hass.states.get(_ALL_ENTITY)
     assert state.state == "on"
     assert state.attributes["level"] == f"{BOOST_FALLBACK_LEVEL:.0f}%"
+
+
+_BOOST_END_ENTITY = f"sensor.{_PREFIX}_toilet_boost_end_time"
+
+
+async def test_boost_end_time_is_now_plus_remaining(hass, mock_api_client, v1_data, freezer):
+    freezer.move_to("2026-10-06T12:00:00+00:00")
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v1_data.serial,
+        api_key=None,
+        healthbox_data=v1_data,
+        boost_status=_boost(True, remaining=600),
+    )
+
+    state = hass.states.get(_BOOST_END_ENTITY)
+    assert state.state == "2026-10-06T12:10:00+00:00"
+
+
+async def test_boost_end_time_stays_put_as_remaining_counts_down(
+    hass, mock_api_client, v1_data, freezer
+):
+    freezer.move_to("2026-10-06T12:00:00+00:00")
+    entry = await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v1_data.serial,
+        api_key=None,
+        healthbox_data=v1_data,
+        boost_status=_boost(True, remaining=600),
+    )
+
+    # Five seconds later the device reports five seconds less remaining, so the
+    # end time it implies is the same instant.
+    freezer.move_to("2026-10-06T12:00:05+00:00")
+    mock_api_client.async_get_boost = AsyncMock(return_value=_boost(True, remaining=595))
+    await entry.runtime_data.async_refresh()
+    await hass.async_block_till_done()
+
+    assert hass.states.get(_BOOST_END_ENTITY).state == "2026-10-06T12:10:00+00:00"
+
+
+async def test_boost_end_time_unknown_while_no_boost_runs(hass, mock_api_client, v1_data):
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v1_data.serial,
+        api_key=None,
+        healthbox_data=v1_data,
+        boost_status=_boost(False),
+    )
+
+    state = hass.states.get(_BOOST_END_ENTITY)
+    assert state.state == "unknown"
+
+
+async def test_boost_end_time_unavailable_when_boost_status_unreadable(
+    hass, mock_api_client, v1_data
+):
+    async def _get_boost(room_id: int) -> api_mod.BoostStatus:
+        if room_id == 1:
+            raise api_mod.Healthbox3ConnectionError("no answer")
+        return _boost(False)
+
+    mock_api_client.async_get_boost = AsyncMock(side_effect=_get_boost)
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v1_data.serial,
+        api_key=None,
+        healthbox_data=v1_data,
+    )
+
+    assert hass.states.get(_BOOST_END_ENTITY).state == "unavailable"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from typing import override
 
 from homeassistant.components.sensor import (
@@ -182,6 +183,9 @@ async def async_setup_entry(
             entities.append(
                 Healthbox3RoomAirflowSensor(coordinator, serial, room.id, room.name)
             )
+        entities.append(
+            Healthbox3RoomBoostEndSensor(coordinator, serial, room.id, room.name)
+        )
 
     if any(s.type == SENSOR_TYPE_GLOBAL_AQI for s in coordinator.data.healthbox.global_sensors):
         entities.append(Healthbox3GlobalAqiSensor(coordinator, serial))
@@ -385,6 +389,54 @@ class Healthbox3RoomAirflowSensor(Healthbox3Entity, SensorEntity):
         if room is None:
             return None
         return _room_airflow_percentage(room)
+
+
+class Healthbox3RoomBoostEndSensor(Healthbox3Entity, SensorEntity):
+    """When a room's running boost will finish, as a timestamp.
+
+    A timestamp rather than a seconds count, so Home Assistant renders a live
+    countdown between polls; a seconds value would sit still for a whole scan
+    interval and then jump.
+
+    Anchored to the poll that read the remaining time, so the value doesn't
+    drift each time Home Assistant reads it.
+
+    Unknown while no boost runs: the device answered, and there is simply
+    nothing to count down. Unavailable only when this room's boost status
+    could not be read at all.
+    """
+
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_translation_key = "room_boost_end"
+
+    def __init__(
+        self,
+        coordinator: Healthbox3DataUpdateCoordinator,
+        serial: str,
+        room_id: int,
+        room_name: str,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, serial)
+        self._room_id = room_id
+        self._attr_translation_placeholders = {"room_name": room_name}
+        self._attr_unique_id = f"{serial}_room{room_id}_boost_end"
+
+    @property
+    @override
+    def available(self) -> bool:
+        """Return whether this room's boost status could be read at all."""
+        return super().available and self._room_id in self.coordinator.data.boost
+
+    @property
+    @override
+    def native_value(self) -> datetime | None:
+        """Return the time the running boost will end, or None if none is running."""
+        data = self.coordinator.data
+        status = data.boost.get(self._room_id)
+        if status is None or data.polled_at is None or not status.enable or status.remaining <= 0:
+            return None
+        return data.polled_at + timedelta(seconds=status.remaining)
 
 
 class Healthbox3GlobalAqiSensor(Healthbox3Entity, SensorEntity):

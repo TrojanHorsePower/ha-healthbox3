@@ -98,6 +98,9 @@
       "room_airflow": {
         "name": "{room_name} Luchtstroom"
       },
+      "room_boost_end": {
+        "name": "{room_name} Einde boost"
+      },
       "global_aqi": {
         "name": "Luchtkwaliteitsindex",
         "state_attributes": {

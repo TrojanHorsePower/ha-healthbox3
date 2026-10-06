@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import datetime, timedelta
 import logging
 from typing import override
 
@@ -13,6 +13,7 @@ from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import discovery_flow, issue_registry as ir
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from .api import (
     BoostStatus,
@@ -66,6 +67,8 @@ class Healthbox3Data:
 
     healthbox: HealthboxData
     boost: dict[int, BoostStatus] = field(default_factory=dict)
+    # When this poll completed. Remaining-time readings are relative to it.
+    polled_at: datetime | None = None
     decision: DeviceDecision | None = None
     breeze: BreezeSettings | None = None
     room_decisions: dict[int, RoomDecision] = field(default_factory=dict)
@@ -156,6 +159,7 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
             errors = await self._async_get_errors_data()
             self._async_reconcile_error_issues(errors)
             return Healthbox3Data(
+                polled_at=dt_util.utcnow(),
                 healthbox=healthbox,
                 boost=boost,
                 decision=decision,

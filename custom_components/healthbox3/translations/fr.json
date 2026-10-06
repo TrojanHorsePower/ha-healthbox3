@@ -98,6 +98,9 @@
       "room_airflow": {
         "name": "{room_name} Débit d'air"
       },
+      "room_boost_end": {
+        "name": "{room_name} Fin du boost"
+      },
       "global_aqi": {
         "name": "Indice de qualité de l'air",
         "state_attributes": {

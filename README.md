@@ -209,6 +209,7 @@ v1-only functionality and prompted you to reauthenticate with a new key.
 | `sensor` | `<room> Air quality index` | Only created for rooms with an air quality sensor; exposes `main_pollutant` when set, plus a `qualification` band (see [Known limitations](#known-limitations)) |
 | `sensor` | `<room> AQI level` | That same qualification band (Very good/Good/Moderate/Poor/Very poor) as its own state, for dashboards - created alongside `<room> Air quality index` |
 | `sensor` | `<room> Airflow` | Current airflow as % of that room's rated (nominal) flow; not capped at 100% - only created for rooms reporting both underlying values |
+| `sensor` | `<room> Boost end time` | When the room's running boost will finish, as a timestamp (shows as a live countdown); unknown while no boost runs |
 | `sensor` | `Air quality index` | Whole-house AQI; exposes `main_pollutant`, `room`, and a `qualification` band (see [Known limitations](#known-limitations)) |
 | `sensor` | `AQI level` | That same whole-house qualification band as its own state, for dashboards - created alongside `Air quality index` |
 | `sensor` | `Ventilation level` | Whole-house current ventilation level, as a percentage; not capped at 100% - requires an active API key |

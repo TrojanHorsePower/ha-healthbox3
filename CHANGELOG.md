@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A `Boost end time` sensor per room: when the running boost will finish,
+  shown as a countdown. It reads unknown while no boost runs.
+
 ### Fixed
 
 - A boost fan's percentage and `level` attribute now show the level a boost
