@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass, field
 import json
+import math
 import logging
 from typing import Any, override
 
@@ -16,6 +17,7 @@ from .const import (
     API_RENSON_CORE_V2_GLOBAL,
     API_V1_BOOST,
     API_V1_DATA_CURRENT,
+    API_V1_DEVICE,
     API_V1_DECISION,
     API_V1_ERROR,
     API_V2_API_KEY,
@@ -174,6 +176,30 @@ def _parse_wifi_status(raw: Any) -> WifiStatus:
         internet_connection=internet if isinstance(internet, bool) else None,
         connection_error=_optional_str(raw.get("connection_error")),
     )
+
+
+@dataclass
+class DeviceTelemetry:
+    """Parsed `/v1/device`: the unit's whole-device electrical power.
+
+    `power` is the unit's instantaneous electrical draw in watts. The device
+    reports `c_mode_power` as well, which only means something during a
+    calibration sweep, so it is deliberately not parsed.
+    """
+
+    power: float | None = None
+
+
+def _parse_device(raw: Any) -> DeviceTelemetry:
+    if not isinstance(raw, dict):
+        raise Healthbox3InvalidResponseError("Unexpected /v1/device response shape")
+    power = raw.get("power")
+    # A non-finite or non-numeric reading is absent, not a measurement.
+    if isinstance(power, bool) or not isinstance(power, (int, float)):
+        return DeviceTelemetry(power=None)
+    if not math.isfinite(power):
+        return DeviceTelemetry(power=None)
+    return DeviceTelemetry(power=float(power))
 
 
 @dataclass
@@ -1034,6 +1060,10 @@ class Healthbox3ApiClient:
     async def async_get_firmware_version(self) -> str:
         """Fetch just the firmware version. Requires an active API key."""
         return (await self.async_get_global_info()).firmware_version
+
+    async def async_get_device(self) -> DeviceTelemetry:
+        """Fetch `/v1/device`. Requires an active API key."""
+        return _parse_device(await self._request("GET", API_V1_DEVICE))
 
     async def async_get_wifi_status(self) -> WifiStatus:
         """Fetch the unit's Wi-Fi client status. Requires an active API key."""

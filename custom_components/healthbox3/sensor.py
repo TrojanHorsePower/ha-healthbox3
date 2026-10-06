@@ -2,21 +2,33 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
+from decimal import Decimal
 from datetime import datetime, timedelta
+from time import monotonic
 from typing import override
 
 from homeassistant.components.sensor import (
+    RestoreSensor,
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.const import EntityCategory, PERCENTAGE, UnitOfRatio, UnitOfTemperature
+from homeassistant.const import (
+    PERCENTAGE,
+    EntityCategory,
+    UnitOfEnergy,
+    UnitOfPower,
+    UnitOfRatio,
+    UnitOfTemperature,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .api import AQI_QUALIFICATION_LEVELS, Room, Sensor, categorize_aqi_quality
 from .const import (
+    ENERGY_MAX_GAP_SECONDS,
     SENSOR_TYPE_AQI,
     SENSOR_TYPE_CO2,
     SENSOR_TYPE_GLOBAL_AQI,
@@ -192,6 +204,8 @@ async def async_setup_entry(
         entities.append(Healthbox3GlobalAqiLevelSensor(coordinator, serial))
 
     if coordinator.use_v2:
+        entities.append(Healthbox3PowerSensor(coordinator, serial))
+        entities.append(Healthbox3EnergySensor(coordinator, serial))
         entities.append(Healthbox3GlobalVentilationLevelSensor(coordinator, serial))
         entities.append(Healthbox3FirmwareVersionSensor(coordinator, serial))
         entities.append(Healthbox3DeviceErrorsSensor(coordinator, serial))
@@ -594,6 +608,116 @@ class Healthbox3GlobalVentilationLevelSensor(Healthbox3Entity, SensorEntity):
         """Return the current whole-house ventilation level."""
         decision = self.coordinator.data.decision
         return decision.global_ventilation_level if decision is not None else None
+
+
+class Healthbox3PowerSensor(Healthbox3Entity, SensorEntity):
+    """The unit's instantaneous electrical power draw, in watts."""
+
+    _attr_device_class = SensorDeviceClass.POWER
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfPower.WATT
+    _attr_translation_key = "power"
+
+    def __init__(
+        self, coordinator: Healthbox3DataUpdateCoordinator, serial: str
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, serial)
+        self._attr_unique_id = f"{serial}_power"
+
+    @property
+    @override
+    def available(self) -> bool:
+        """Return whether the device reported its power draw."""
+        return super().available and self.native_value is not None
+
+    @property
+    @override
+    def native_value(self) -> float | None:
+        """Return the current power draw in watts."""
+        device = self.coordinator.data.device
+        return device.power if device is not None else None
+
+
+class Healthbox3EnergySensor(Healthbox3Entity, RestoreSensor):
+    """Cumulative electrical energy, integrated from the unit's power draw.
+
+    The device reports instantaneous power only, so this integrates it. Each
+    pair of consecutive samples contributes their trapezoid. A pair further
+    apart than ENERGY_MAX_GAP_SECONDS contributes nothing, since the power
+    during such a gap is unknown. An outage clears the previous sample, so
+    no energy is counted across it either.
+
+    The total survives restarts. Energy during a stop of Home Assistant is
+    not counted. Time comes from a monotonic clock, so a system clock change
+    cannot inflate or rewind the total.
+
+    `TOTAL_INCREASING`: the value only grows, and the one drop that can happen,
+    a restore that found nothing and starts from zero, is what that state
+    class is defined to handle.
+    """
+
+    _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+    _attr_suggested_display_precision = 3
+    _attr_translation_key = "energy"
+
+    def __init__(
+        self,
+        coordinator: Healthbox3DataUpdateCoordinator,
+        serial: str,
+        *,
+        clock: Callable[[], float] = monotonic,
+    ) -> None:
+        """Initialize the sensor. `clock` is injectable so tests can drive time."""
+        super().__init__(coordinator, serial)
+        self._attr_unique_id = f"{serial}_energy"
+        self._clock = clock
+        self._total_kwh = 0.0
+        # (clock time, watts) of the previous usable sample.
+        self._previous: tuple[float, float] | None = None
+
+    @override
+    async def async_added_to_hass(self) -> None:
+        """Restore the running total."""
+        await super().async_added_to_hass()
+        last = await self.async_get_last_sensor_data()
+        if last is None or last.native_value is None:
+            return
+        restored = last.native_value
+        # A date or other non-numeric value means starting over, which
+        # TOTAL_INCREASING handles.
+        if isinstance(restored, (int, float, str, Decimal)):
+            try:
+                self._total_kwh = float(restored)
+                return
+            except ValueError:
+                pass
+        self._total_kwh = 0.0
+
+    @override
+    def _handle_coordinator_update(self) -> None:
+        """Add the energy since the previous sample, then write the state."""
+        device = self.coordinator.data.device
+        watts = device.power if device is not None else None
+        if watts is None:
+            self._previous = None
+        else:
+            now = self._clock()
+            if self._previous is not None:
+                elapsed = now - self._previous[0]
+                if 0 < elapsed <= ENERGY_MAX_GAP_SECONDS:
+                    average_watts = (self._previous[1] + watts) / 2
+                    self._total_kwh += average_watts * elapsed / 3_600_000
+            self._previous = (now, watts)
+        super()._handle_coordinator_update()
+
+    @property
+    @override
+    def native_value(self) -> float:
+        """Return the energy accumulated so far, in kWh."""
+        return self._total_kwh
 
 
 class Healthbox3ConnectionTypeSensor(Healthbox3Entity, SensorEntity):

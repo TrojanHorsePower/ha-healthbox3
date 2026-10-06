@@ -139,6 +139,12 @@
       },
       "wifi_network": {
         "name": "Wi-Fi network"
+      },
+      "power": {
+        "name": "Power"
+      },
+      "energy": {
+        "name": "Energy"
       }
     },
     "select": {

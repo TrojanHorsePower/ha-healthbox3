@@ -176,6 +176,18 @@ def global_info(renson_core_global_raw) -> api_mod.GlobalInfo:
 
 
 @pytest.fixture
+def v1_device_raw() -> dict:
+    """Raw JSON from a real device's /v1/device."""
+    return _load_fixture("v1-device.json")
+
+
+@pytest.fixture
+def device_telemetry(v1_device_raw) -> api_mod.DeviceTelemetry:
+    """Parsed DeviceTelemetry from the real /v1/device fixture."""
+    return api_mod._parse_device(v1_device_raw)
+
+
+@pytest.fixture
 def wifi_status_raw() -> dict:
     """Raw JSON from a real device's /renson_core/v1/wifi/client/status."""
     return _load_fixture("wifi-client-status.json")
@@ -235,6 +247,7 @@ def mock_api_client():
         client.async_get_global_info = AsyncMock(
             return_value=api_mod.GlobalInfo(firmware_version="2.6.9")
         )
+        client.async_get_device = AsyncMock(return_value=api_mod.DeviceTelemetry())
         yield client
 
 
@@ -264,6 +277,7 @@ async def setup_integration(
     firmware_version: str | None = None,
     global_info: api_mod.GlobalInfo | None = None,
     wifi_status: api_mod.WifiStatus | None = None,
+    device: api_mod.DeviceTelemetry | None = None,
     errors: list[api_mod.DeviceError] | None = None,
 ) -> MockConfigEntry:
     """Create a config entry and run async_setup_entry against a mocked client.
@@ -311,6 +325,8 @@ async def setup_integration(
     )
     if wifi_status is not None:
         mock_api_client.async_get_wifi_status = AsyncMock(return_value=wifi_status)
+    if device is not None:
+        mock_api_client.async_get_device = AsyncMock(return_value=device)
     if errors is not None:
         mock_api_client.async_get_errors = AsyncMock(return_value=errors)
 

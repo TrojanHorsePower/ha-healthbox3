@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A `Power` sensor (current draw in watts) and an `Energy` sensor (kWh, for the
+  Energy dashboard), both behind an active API key. Energy is estimated from
+  the periodic power readings and does not count gaps longer than 15 minutes.
 - Network diagnostics for the unit: a `Connection type` sensor (Wi-Fi or
   Ethernet), a `Wi-Fi network` sensor (disabled by default, since it shows
   your network name), and an `Internet access` sensor on Wi-Fi units. The

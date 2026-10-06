@@ -21,6 +21,7 @@ from .api import (
     BreezeSettings,
     DeviceDecision,
     DeviceError,
+    DeviceTelemetry,
     GlobalInfo,
     Healthbox3ApiClient,
     Healthbox3AuthenticationError,
@@ -93,6 +94,8 @@ class Healthbox3Data:
     global_info: GlobalInfo | None = None
     # Wi-Fi client status, only read for a Wi-Fi unit and cached between polls.
     wifi: WifiStatus | None = None
+    # Whole-unit electrical power, from /v1/device.
+    device: DeviceTelemetry | None = None
     errors: list[DeviceError] = field(default_factory=list)
 
 
@@ -182,6 +185,7 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
             room_decisions = await self._async_get_room_decisions_data()
             global_info = await self._async_get_global_info_data()
             wifi = await self._async_get_wifi_data(global_info)
+            device = await self._async_get_device_data()
             errors = await self._async_get_errors_data()
             self._async_reconcile_error_issues(errors)
             data = Healthbox3Data(
@@ -194,6 +198,7 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
                 firmware_version=global_info.firmware_version if global_info else None,
                 global_info=global_info,
                 wifi=wifi,
+                device=device,
                 errors=errors,
             )
             self._async_sync_unit_device(global_info)
@@ -251,6 +256,16 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
             return await self.client.async_get_global_info()
         except Healthbox3Error as err:
             _LOGGER.debug("Failed to fetch global info: %s", err)
+            return None
+
+    async def _async_get_device_data(self) -> DeviceTelemetry | None:
+        """Fetch `/v1/device` once per poll. Same gating and tolerance as the rest."""
+        if not self.use_v2:
+            return None
+        try:
+            return await self.client.async_get_device()
+        except Healthbox3Error as err:
+            _LOGGER.debug("Failed to fetch device telemetry: %s", err)
             return None
 
     async def _async_get_wifi_data(self, global_info: GlobalInfo | None) -> WifiStatus | None:

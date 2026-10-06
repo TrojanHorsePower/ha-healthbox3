@@ -92,6 +92,12 @@ API_RENSON_CORE_V2_GLOBAL = "/renson_core/v2/global"
 # Wi-Fi client status: whether the unit has internet access, and its SSID.
 # Gated like the global endpoint above. Read at most once per cache TTL.
 API_RENSON_CORE_V1_WIFI_STATUS = "/renson_core/v1/wifi/client/status"
+# Whole-unit device state, including instantaneous electrical power. Gated
+# like the endpoints above.
+API_V1_DEVICE = "/v1/device"
+# Longest gap between two power samples that is still integrated into energy.
+# A longer gap has no reliable power figure, so it contributes nothing.
+ENERGY_MAX_GAP_SECONDS = 15 * 60
 WIFI_STATUS_CACHE_TTL = timedelta(minutes=5)
 
 # Same undocumented/reverse-engineered status as API_V1_DECISION above.

@@ -214,6 +214,8 @@ v1-only functionality and prompted you to reauthenticate with a new key.
 | `sensor` | `AQI level` | That same whole-house qualification band as its own state, for dashboards - created alongside `Air quality index` |
 | `sensor` | `Ventilation level` | Whole-house current ventilation level, as a percentage; not capped at 100% - requires an active API key |
 | `sensor` | `Firmware version` | The device's currently installed firmware version - diagnostic entity, requires an active API key |
+| `sensor` | `Power` | The unit's current electrical draw in watts - requires an active API key |
+| `sensor` | `Energy` | Electrical energy the unit has used, in kWh, integrated from `Power` for the Energy dashboard - requires an active API key. See Known limitations for what it does not count |
 | `sensor` | `Connection type` | How the unit is attached to the network: `WIFI` or `ETHERNET` - diagnostic entity, requires an active API key |
 | `sensor` | `Wi-Fi network` | The Wi-Fi network (SSID) the unit is connected to - diagnostic, **disabled by default** since it names your network; enable it in the entity settings. Only on Wi-Fi units, requires an active API key |
 | `binary_sensor` | `Internet access` | Whether the unit reports internet access - diagnostic, only on Wi-Fi units, requires an active API key. Unknown, not off, when the Wi-Fi status could not be read |
@@ -370,6 +372,8 @@ requests if the device disappears partway through the update. Persistent
 connection failures still make affected entities unavailable.
 
 ## Known limitations
+
+- **`Energy` is an estimate from periodic samples.** The unit reports its power draw, not a running total, so the integration joins consecutive samples, one per poll. Between two samples more than 15 minutes apart, nothing is counted, since the power in that gap is unknown. Energy used while Home Assistant is stopped, or while the unit is unreachable, is not counted either. The total survives restarts.
 
 - **Automatic network discovery is unreliable on some networks.** Setup
   tries a UDP broadcast first, but delivery is commonly blocked by AP
