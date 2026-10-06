@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Each ventilated room is now its own device, linked under the Healthbox unit,
+  instead of every entity sitting on one device. Existing entities keep their
+  entity IDs and history and move to their room's device automatically.
+  Entity names are unchanged.
+- If you assigned an area to the Healthbox unit's device, room entities no
+  longer inherit it. Assign areas to the room devices instead.
+
 ### Added
 
 - A `Boost end time` sensor per room: when the running boost will finish,

@@ -26,7 +26,7 @@ from .conftest import setup_integration
 # The device name ("Healthbox 3.0" in both fixtures) becomes an entity_id
 # slug prefix once has_entity_name groups every entity under one device.
 _PREFIX = "healthbox_3_0"
-_ROOM1_ENTITY = f"fan.{_PREFIX}_toilet_boost"
+_ROOM1_ENTITY = "fan.toilet_boost"
 _ALL_ENTITY = f"fan.{_PREFIX}_boost_all"
 
 
@@ -382,7 +382,7 @@ async def test_boost_fan_guards_against_a_room_removed_from_the_device(
     coordinator.async_update_listeners()
     await hass.async_block_till_done()
 
-    entity_id = f"fan.{_PREFIX}_toilet_boost"
+    entity_id = "fan.toilet_boost"
     with pytest.raises(HomeAssistantError):
         await hass.services.async_call(
             "fan", "turn_on", {"entity_id": entity_id}, blocking=True
@@ -585,7 +585,7 @@ async def test_boost_all_fan_falls_back_to_staged_when_rooms_disagree(
     assert state.attributes["level"] == f"{BOOST_FALLBACK_LEVEL:.0f}%"
 
 
-_BOOST_END_ENTITY = f"sensor.{_PREFIX}_toilet_boost_end_time"
+_BOOST_END_ENTITY = "sensor.toilet_boost_end_time"
 
 
 async def test_boost_end_time_is_now_plus_remaining(hass, mock_api_client, v1_data, freezer):

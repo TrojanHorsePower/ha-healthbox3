@@ -35,7 +35,7 @@ from .coordinator import (
     Healthbox3ConfigEntry,
     Healthbox3DataUpdateCoordinator,
 )
-from .entity import Healthbox3Entity, room_exists
+from .entity import Healthbox3Entity, RoomRef, room_exists
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -118,7 +118,7 @@ async def async_setup_entry(
             params=coordinator.boost_all_params,
             unique_id=f"{serial}_boost_all",
             translation_key="boost_all",
-            room_name=None,
+            room=None,
         )
     )
 
@@ -150,15 +150,13 @@ class _Healthbox3BoostFan(Healthbox3Entity, RestoreEntity, FanEntity):
         params: BoostParams,
         unique_id: str,
         translation_key: str,
-        room_name: str | None,
+        room: RoomRef | None,
     ) -> None:
         """Initialize the fan."""
-        super().__init__(coordinator, serial)
+        super().__init__(coordinator, serial, room=room)
         self._params = params
         self._attr_unique_id = unique_id
         self._attr_translation_key = translation_key
-        if room_name is not None:
-            self._attr_translation_placeholders = {"room_name": room_name}
 
     # --- overridden by subclasses ---
 
@@ -335,7 +333,7 @@ class Healthbox3RoomBoostFan(_Healthbox3BoostFan):
             params=params,
             unique_id=unique_id,
             translation_key=translation_key,
-            room_name=room_name,
+            room=RoomRef(id=room_id, name=room_name),
         )
         self._room_id = room_id
 

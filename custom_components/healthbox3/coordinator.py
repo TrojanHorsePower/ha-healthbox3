@@ -146,6 +146,9 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
         )
         self._relocate_attempted = False
         self._tracked_error_issue_ids: set[str] = set()
+        # Registry id of the unit device, which room devices link to via
+        # `via_device_id`. Set by async_setup_entry before platforms load.
+        self.unit_device_id: str | None = None
 
     @override
     async def _async_update_data(self) -> Healthbox3Data:

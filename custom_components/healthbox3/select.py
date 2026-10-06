@@ -12,7 +12,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .api import Room
 from .const import DOMAIN, PROFILES
 from .coordinator import Healthbox3ConfigEntry, Healthbox3DataUpdateCoordinator
-from .entity import Healthbox3Entity
+from .entity import Healthbox3Entity, RoomRef
 
 # Profile changes are a low-frequency user action against a single small
 # device; the coordinator (not per-entity polling) owns concurrency for
@@ -59,9 +59,8 @@ class Healthbox3ProfileSelect(Healthbox3Entity, SelectEntity):
         room_name: str,
     ) -> None:
         """Initialize the select entity."""
-        super().__init__(coordinator, serial)
+        super().__init__(coordinator, serial, room=RoomRef(id=room_id, name=room_name))
         self._room_id = room_id
-        self._attr_translation_placeholders = {"room_name": room_name}
         self._attr_unique_id = f"{serial}_room{room_id}_profile"
 
     def _room(self) -> Room | None:

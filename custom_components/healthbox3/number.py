@@ -24,7 +24,7 @@ from .const import (
     SILENT_REDUCTION_MIN,
 )
 from .coordinator import Healthbox3ConfigEntry, Healthbox3DataUpdateCoordinator
-from .entity import Healthbox3Entity, room_exists
+from .entity import Healthbox3Entity, RoomRef, room_exists
 
 # Device-wide settings, changed rarely; nothing to throttle.
 PARALLEL_UPDATES = 0
@@ -172,9 +172,8 @@ class Healthbox3RoomCO2ThresholdNumber(Healthbox3Entity, NumberEntity):
         room_name: str,
     ) -> None:
         """Initialize the number."""
-        super().__init__(coordinator, serial)
+        super().__init__(coordinator, serial, room=RoomRef(id=room_id, name=room_name))
         self._room_id = room_id
-        self._attr_translation_placeholders = {"room_name": room_name}
         self._attr_unique_id = f"{serial}_room{room_id}_co2_threshold"
 
     def _co2(self) -> RoomCO2Demand | None:

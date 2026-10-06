@@ -20,7 +20,7 @@ from custom_components.healthbox3 import api as api_mod
 from custom_components.healthbox3.fan import _percentage_to_level
 
 from .conftest import setup_integration
-from .test_boost import _ALL_ENTITY, _PREFIX, _ROOM1_ENTITY, _boost
+from .test_boost import _ALL_ENTITY, _ROOM1_ENTITY, _boost
 
 _TRIGGER_EVENT = "healthbox3_test_trigger"
 
@@ -195,7 +195,7 @@ async def test_automation_hitting_removed_room_logs_error_and_does_not_call_devi
     coordinator.async_update_listeners()
     await hass.async_block_till_done()
 
-    entity_id = f"fan.{_PREFIX}_toilet_boost"
+    entity_id = "fan.toilet_boost"
 
     with caplog.at_level(logging.ERROR):
         await _fire_automation(

@@ -183,14 +183,14 @@ async def test_room_co2_threshold_number_reports_state(
         room_decisions=room_decisions,
     )
 
-    state = hass.states.get(f"number.{_PREFIX}_toilet_co2_threshold")
+    state = hass.states.get("number.toilet_co2_threshold")
     assert state is not None
     # The fixture's room 1 has minimum=650/maximum=800 - the entity reads
     # `maximum`, confirmed to be what the Renson app displays (see
     # number.py's Healthbox3RoomCO2ThresholdNumber docstring).
     assert float(state.state) == 800.0
 
-    assert hass.states.get(f"number.{_PREFIX}_bathroom_co2_threshold") is None
+    assert hass.states.get("number.bathroom_co2_threshold") is None
 
 
 async def test_room_co2_threshold_number_not_created_without_api_key(
@@ -205,7 +205,7 @@ async def test_room_co2_threshold_number_not_created_without_api_key(
         boost_status=boost_status,
     )
 
-    assert hass.states.get(f"number.{_PREFIX}_toilet_co2_threshold") is None
+    assert hass.states.get("number.toilet_co2_threshold") is None
 
 
 async def test_room_co2_threshold_number_set_value_preserves_range_calls_api(
@@ -229,7 +229,7 @@ async def test_room_co2_threshold_number_set_value_preserves_range_calls_api(
     await hass.services.async_call(
         "number",
         "set_value",
-        {"entity_id": f"number.{_PREFIX}_toilet_co2_threshold", "value": 850},
+        {"entity_id": "number.toilet_co2_threshold", "value": 850},
         blocking=True,
     )
 
@@ -264,7 +264,7 @@ async def test_room_co2_threshold_number_guards_against_a_room_removed_from_the_
     coordinator.async_update_listeners()
     await hass.async_block_till_done()
 
-    entity_id = f"number.{_PREFIX}_toilet_co2_threshold"
+    entity_id = "number.toilet_co2_threshold"
     with pytest.raises(HomeAssistantError):
         await hass.services.async_call(
             "number",
@@ -292,7 +292,7 @@ async def test_room_co2_threshold_number_unavailable_when_room_decisions_fetch_f
     await hass.async_block_till_done()
 
     assert (
-        hass.states.get(f"number.{_PREFIX}_toilet_co2_threshold").state
+        hass.states.get("number.toilet_co2_threshold").state
         == "unavailable"
     )
 

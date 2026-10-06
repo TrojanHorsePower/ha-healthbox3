@@ -60,19 +60,19 @@
   "entity": {
     "sensor": {
       "room_temperature": {
-        "name": "{room_name} Température"
+        "name": "Température"
       },
       "room_humidity": {
-        "name": "{room_name} Humidité"
+        "name": "Humidité"
       },
       "room_co2": {
-        "name": "{room_name} CO2"
+        "name": "CO2"
       },
       "room_voc": {
-        "name": "{room_name} COV"
+        "name": "COV"
       },
       "room_aqi": {
-        "name": "{room_name} Indice de qualité de l'air",
+        "name": "Indice de qualité de l'air",
         "state_attributes": {
           "qualification": {
             "state": {
@@ -86,7 +86,7 @@
         }
       },
       "room_aqi_level": {
-        "name": "{room_name} Niveau IQA",
+        "name": "Niveau IQA",
         "state": {
           "very_good": "Très bon",
           "good": "Bon",
@@ -96,10 +96,10 @@
         }
       },
       "room_airflow": {
-        "name": "{room_name} Débit d'air"
+        "name": "Débit d'air"
       },
       "room_boost_end": {
-        "name": "{room_name} Fin du boost"
+        "name": "Fin du boost"
       },
       "global_aqi": {
         "name": "Indice de qualité de l'air",
@@ -137,12 +137,12 @@
     },
     "select": {
       "room_profile": {
-        "name": "{room_name} Profil"
+        "name": "Profil"
       }
     },
     "fan": {
       "room_boost": {
-        "name": "{room_name} Boost"
+        "name": "Boost"
       },
       "boost_all": {
         "name": "Booster tout"
@@ -164,7 +164,7 @@
         "name": "Température Breeze"
       },
       "room_co2_threshold": {
-        "name": "{room_name} Seuil de CO2"
+        "name": "Seuil de CO2"
       },
       "silent_reduction": {
         "name": "Réduction Silent"

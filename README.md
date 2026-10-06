@@ -227,10 +227,17 @@ v1-only functionality and prompted you to reauthenticate with a new key.
 | `time` | `Silent start time` | Time of day the silent schedule starts, applied to every day of the week - requires an active API key, see [Known limitations](#known-limitations) |
 | `time` | `Silent stop time` | Time of day the silent schedule stops, applied to every day of the week - requires an active API key, see [Known limitations](#known-limitations) |
 
-All entities for a given Healthbox unit are grouped under a single device
-(named after the device's own description, e.g. "Healthbox 3.0" - rename it
-in the UI if you'd like something more specific, like "Basement
-Healthbox").
+Unit-wide entities (air quality, firmware, silent schedule, boost all, and so
+on) belong to one device named after the device's own description, e.g.
+"Healthbox 3.0". Each ventilated room is its own device, named after the room
+and linked under the unit. Assign areas per room device, so that room's
+sensors and controls follow it. A room entity inherits its area from its
+device only when the entity has no area of its own.
+
+Entity IDs are fixed when an entity is first created, so existing installs
+keep the IDs they had before rooms became devices. The examples below use
+those IDs. New installs get shorter IDs without the unit prefix, for example
+`sensor.bathroom_humidity` instead of `sensor.healthbox_3_0_bathroom_humidity`.
 
 ### Boost control
 

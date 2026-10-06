@@ -5,10 +5,12 @@ from __future__ import annotations
 from homeassistant.const import CONF_API_KEY, CONF_HOST, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import Healthbox3ApiClient, Healthbox3ConnectionError, Healthbox3Error
 from .coordinator import Healthbox3ConfigEntry, Healthbox3DataUpdateCoordinator
+from .entity import unit_device_info
 
 PLATFORMS = [
     Platform.FAN,
@@ -52,6 +54,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: Healthbox3ConfigEntry) -
     await coordinator.async_config_entry_first_refresh()
 
     entry.runtime_data = coordinator
+    unit = dr.async_get(hass).async_get_or_create(
+        config_entry_id=entry.entry_id,
+        **unit_device_info(coordinator, coordinator.data.healthbox.serial),
+    )
+    coordinator.unit_device_id = unit.id
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 

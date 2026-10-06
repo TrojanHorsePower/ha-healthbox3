@@ -60,19 +60,19 @@
   "entity": {
     "sensor": {
       "room_temperature": {
-        "name": "{room_name} Temperatuur"
+        "name": "Temperatuur"
       },
       "room_humidity": {
-        "name": "{room_name} Vochtigheid"
+        "name": "Vochtigheid"
       },
       "room_co2": {
-        "name": "{room_name} CO2"
+        "name": "CO2"
       },
       "room_voc": {
-        "name": "{room_name} VOC"
+        "name": "VOC"
       },
       "room_aqi": {
-        "name": "{room_name} Luchtkwaliteitsindex",
+        "name": "Luchtkwaliteitsindex",
         "state_attributes": {
           "qualification": {
             "state": {
@@ -86,7 +86,7 @@
         }
       },
       "room_aqi_level": {
-        "name": "{room_name} AQI-niveau",
+        "name": "AQI-niveau",
         "state": {
           "very_good": "Zeer goed",
           "good": "Goed",
@@ -96,10 +96,10 @@
         }
       },
       "room_airflow": {
-        "name": "{room_name} Luchtstroom"
+        "name": "Luchtstroom"
       },
       "room_boost_end": {
-        "name": "{room_name} Einde boost"
+        "name": "Einde boost"
       },
       "global_aqi": {
         "name": "Luchtkwaliteitsindex",
@@ -137,12 +137,12 @@
     },
     "select": {
       "room_profile": {
-        "name": "{room_name} Profiel"
+        "name": "Profiel"
       }
     },
     "fan": {
       "room_boost": {
-        "name": "{room_name} Boost"
+        "name": "Boost"
       },
       "boost_all": {
         "name": "Boost alles"
@@ -164,7 +164,7 @@
         "name": "Breeze-temperatuur"
       },
       "room_co2_threshold": {
-        "name": "{room_name} CO2-drempel"
+        "name": "CO2-drempel"
       },
       "silent_reduction": {
         "name": "Silent-reductie"
