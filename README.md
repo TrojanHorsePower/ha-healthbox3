@@ -214,6 +214,9 @@ v1-only functionality and prompted you to reauthenticate with a new key.
 | `sensor` | `AQI level` | That same whole-house qualification band as its own state, for dashboards - created alongside `Air quality index` |
 | `sensor` | `Ventilation level` | Whole-house current ventilation level, as a percentage; not capped at 100% - requires an active API key |
 | `sensor` | `Firmware version` | The device's currently installed firmware version - diagnostic entity, requires an active API key |
+| `sensor` | `Connection type` | How the unit is attached to the network: `WIFI` or `ETHERNET` - diagnostic entity, requires an active API key |
+| `sensor` | `Wi-Fi network` | The Wi-Fi network (SSID) the unit is connected to - diagnostic, **disabled by default** since it names your network; enable it in the entity settings. Only on Wi-Fi units, requires an active API key |
+| `binary_sensor` | `Internet access` | Whether the unit reports internet access - diagnostic, only on Wi-Fi units, requires an active API key. Unknown, not off, when the Wi-Fi status could not be read |
 | `sensor` | `Device errors` | Count of currently-active device-reported errors, plus the most recent one's details as attributes - diagnostic entity, requires an active API key; each active error also creates a repair issue (**Settings > Repairs**) |
 | `select` | `<room> Profile` | eco/health/intense - only created with an active API key |
 | `fan` | `<room> Boost` | Boost for that room - see "Boost control" below |
@@ -226,6 +229,9 @@ v1-only functionality and prompted you to reauthenticate with a new key.
 | `number` | `Silent reduction` | Ventilation reduction while the silent schedule is active, 5-25% - requires an active API key |
 | `time` | `Silent start time` | Time of day the silent schedule starts, applied to every day of the week - requires an active API key, see [Known limitations](#known-limitations) |
 | `time` | `Silent stop time` | Time of day the silent schedule stops, applied to every day of the week - requires an active API key, see [Known limitations](#known-limitations) |
+
+The unit's MAC address and web-UI address (`http://<ip>`) are shown on its
+device entry, and kept current as the device's address changes.
 
 Unit-wide entities (air quality, firmware, silent schedule, boost all, and so
 on) belong to one device named after the device's own description, e.g.

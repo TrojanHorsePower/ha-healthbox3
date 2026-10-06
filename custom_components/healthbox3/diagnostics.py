@@ -31,6 +31,10 @@ TO_REDACT = {
     "city",
     "MAC",
     "IP",
+    # The same network identifiers, under the names of the dataclass fields.
+    "mac",
+    "ip",
+    "ssid",
 }
 
 
@@ -52,5 +56,13 @@ async def async_get_config_entry_diagnostics(
             for room_id, params in coordinator.boost_params.items()
         },
         "boost_all_params": asdict(coordinator.boost_all_params),
+        "global_info": (
+            asdict(coordinator.data.global_info)
+            if coordinator.data.global_info is not None
+            else None
+        ),
+        "wifi": (
+            asdict(coordinator.data.wifi) if coordinator.data.wifi is not None else None
+        ),
     }
     return async_redact_data(diagnostics, TO_REDACT)

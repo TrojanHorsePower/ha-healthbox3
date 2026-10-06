@@ -89,6 +89,10 @@ SILENT_WEEKDAYS = [
 # an active API key, so gated the same way rather than assumed
 # key-independent.
 API_RENSON_CORE_V2_GLOBAL = "/renson_core/v2/global"
+# Wi-Fi client status: whether the unit has internet access, and its SSID.
+# Gated like the global endpoint above. Read at most once per cache TTL.
+API_RENSON_CORE_V1_WIFI_STATUS = "/renson_core/v1/wifi/client/status"
+WIFI_STATUS_CACHE_TTL = timedelta(minutes=5)
 
 # Same undocumented/reverse-engineered status as API_V1_DECISION above.
 # Confirmed real shape from errors_rest.js ([{code, time, description,

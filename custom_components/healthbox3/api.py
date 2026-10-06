@@ -12,6 +12,7 @@ import aiohttp
 
 from .const import (
     API_KEY_STATE_VALID,
+    API_RENSON_CORE_V1_WIFI_STATUS,
     API_RENSON_CORE_V2_GLOBAL,
     API_V1_BOOST,
     API_V1_DATA_CURRENT,
@@ -114,6 +115,65 @@ class HealthboxData:
     global_parameters: dict[str, Parameter] = field(default_factory=dict)
     rooms: list[Room] = field(default_factory=list)
     global_sensors: list[Sensor] = field(default_factory=list)
+
+
+@dataclass
+class GlobalInfo:
+    """Parsed `/renson_core/v2/global`: identity and network position.
+
+    Only `firmware_version` is required. A response without it is not the
+    shape this client expects, so it is rejected rather than half-used.
+    `interface_type` is the device's own answer to how it is attached
+    ("WIFI" or "ETHERNET" on hardware seen so far).
+    """
+
+    firmware_version: str
+    mac: str | None = None
+    ip: str | None = None
+    interface_type: str | None = None
+
+
+@dataclass
+class WifiStatus:
+    """Parsed `/renson_core/v1/wifi/client/status`.
+
+    Describes the unit's Wi-Fi client. A unit wired over Ethernet still
+    answers, but reports a non-connected status about a radio that is off,
+    so this is only meaningful on a Wi-Fi unit.
+    """
+
+    status: str | None = None
+    ssid: str | None = None
+    internet_connection: bool | None = None
+    connection_error: str | None = None
+
+
+def _optional_str(value: Any) -> str | None:
+    """Return a non-empty string, or None (the device uses "" for absent)."""
+    return value if isinstance(value, str) and value else None
+
+
+def _parse_global_info(raw: Any) -> GlobalInfo:
+    if not isinstance(raw, dict) or not isinstance(raw.get("firmware version"), str):
+        raise Healthbox3InvalidResponseError("Unexpected renson_core/v2/global response shape")
+    return GlobalInfo(
+        firmware_version=raw["firmware version"],
+        mac=_optional_str(raw.get("MAC")),
+        ip=_optional_str(raw.get("IP")),
+        interface_type=_optional_str(raw.get("IFTYPE")),
+    )
+
+
+def _parse_wifi_status(raw: Any) -> WifiStatus:
+    if not isinstance(raw, dict):
+        raise Healthbox3InvalidResponseError("Unexpected Wi-Fi status response shape")
+    internet = raw.get("internet_connection")
+    return WifiStatus(
+        status=_optional_str(raw.get("status")),
+        ssid=_optional_str(raw.get("ssid")),
+        internet_connection=internet if isinstance(internet, bool) else None,
+        connection_error=_optional_str(raw.get("connection_error")),
+    )
 
 
 @dataclass
@@ -962,24 +1022,24 @@ class Healthbox3ApiClient:
         payload = {"silent": {day: day_schedule for day in SILENT_WEEKDAYS}}
         await self._request("PUT", API_V1_DECISION, json=payload)
 
-    async def async_get_firmware_version(self) -> str:
-        """Fetch the device's current firmware version. Requires an active API key.
+    async def async_get_global_info(self) -> GlobalInfo:
+        """Fetch `/renson_core/v2/global`. Requires an active API key.
 
-        The real response also has MAC/IP/serial/warranty_number/datetime
-        keys - deliberately not parsed here, since MAC/serial/warranty are
-        already available (and already exposed) via DiscoveryInfo, and
-        IP/datetime aren't useful device-level information. Note the field
-        is literally `"firmware version"` (with a space) on this endpoint -
-        confirmed from a real capture - not `"Firmwareversion"` like the
-        unrelated discovery response uses for the same concept.
+        The firmware field is literally `"firmware version"` (with a space)
+        on this endpoint, confirmed from a real capture. The discovery
+        response uses `"Firmwareversion"` for the same concept.
         """
-        raw = await self._request("GET", API_RENSON_CORE_V2_GLOBAL)
-        try:
-            return raw["firmware version"]
-        except (KeyError, TypeError) as err:
-            raise Healthbox3InvalidResponseError(
-                "Unexpected renson_core/v2/global response shape"
-            ) from err
+        return _parse_global_info(await self._request("GET", API_RENSON_CORE_V2_GLOBAL))
+
+    async def async_get_firmware_version(self) -> str:
+        """Fetch just the firmware version. Requires an active API key."""
+        return (await self.async_get_global_info()).firmware_version
+
+    async def async_get_wifi_status(self) -> WifiStatus:
+        """Fetch the unit's Wi-Fi client status. Requires an active API key."""
+        return _parse_wifi_status(
+            await self._request("GET", API_RENSON_CORE_V1_WIFI_STATUS)
+        )
 
     async def async_get_errors(self) -> list[DeviceError]:
         """Fetch and parse `/v1/error`. Requires an active API key.

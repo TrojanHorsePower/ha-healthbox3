@@ -11,7 +11,8 @@ from typing import override
 from homeassistant.config_entries import SOURCE_INTEGRATION_DISCOVERY, ConfigEntry
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import discovery_flow, issue_registry as ir
+from homeassistant.helpers import device_registry as dr, discovery_flow, issue_registry as ir
+from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, format_mac
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -20,6 +21,7 @@ from .api import (
     BreezeSettings,
     DeviceDecision,
     DeviceError,
+    GlobalInfo,
     Healthbox3ApiClient,
     Healthbox3AuthenticationError,
     Healthbox3ConnectionError,
@@ -27,6 +29,7 @@ from .api import (
     Healthbox3InvalidResponseError,
     HealthboxData,
     RoomDecision,
+    WifiStatus,
     async_discover_broadcast,
 )
 from .const import (
@@ -37,6 +40,7 @@ from .const import (
     BOOST_LEVEL_MIN,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    WIFI_STATUS_CACHE_TTL,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -52,6 +56,18 @@ _ERROR_SEVERITY: dict[str, ir.IssueSeverity] = {
     "critical": ir.IssueSeverity.CRITICAL,
     "warning": ir.IssueSeverity.WARNING,
 }
+
+
+def unit_connections(global_info: GlobalInfo) -> set[tuple[str, str]]:
+    """Return the unit's network identity (its MAC), if the device reported one."""
+    if global_info.mac is None:
+        return set()
+    return {(CONNECTION_NETWORK_MAC, format_mac(global_info.mac))}
+
+
+def unit_configuration_url(global_info: GlobalInfo) -> str | None:
+    """Return the URL of the device's own web UI, if the device reported an IP."""
+    return f"http://{global_info.ip}" if global_info.ip is not None else None
 
 
 @dataclass
@@ -73,6 +89,10 @@ class Healthbox3Data:
     breeze: BreezeSettings | None = None
     room_decisions: dict[int, RoomDecision] = field(default_factory=dict)
     firmware_version: str | None = None
+    # Unit identity and network position, from /renson_core/v2/global.
+    global_info: GlobalInfo | None = None
+    # Wi-Fi client status, only read for a Wi-Fi unit and cached between polls.
+    wifi: WifiStatus | None = None
     errors: list[DeviceError] = field(default_factory=list)
 
 
@@ -149,6 +169,8 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
         # Registry id of the unit device, which room devices link to via
         # `via_device_id`. Set by async_setup_entry before platforms load.
         self.unit_device_id: str | None = None
+        self._wifi_cache: WifiStatus | None = None
+        self._wifi_cached_at: datetime | None = None
 
     @override
     async def _async_update_data(self) -> Healthbox3Data:
@@ -158,19 +180,24 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
             decision = await self._async_get_decision_data()
             breeze = await self._async_get_breeze_data()
             room_decisions = await self._async_get_room_decisions_data()
-            firmware_version = await self._async_get_firmware_version_data()
+            global_info = await self._async_get_global_info_data()
+            wifi = await self._async_get_wifi_data(global_info)
             errors = await self._async_get_errors_data()
             self._async_reconcile_error_issues(errors)
-            return Healthbox3Data(
+            data = Healthbox3Data(
                 polled_at=dt_util.utcnow(),
                 healthbox=healthbox,
                 boost=boost,
                 decision=decision,
                 breeze=breeze,
                 room_decisions=room_decisions,
-                firmware_version=firmware_version,
+                firmware_version=global_info.firmware_version if global_info else None,
+                global_info=global_info,
+                wifi=wifi,
                 errors=errors,
             )
+            self._async_sync_unit_device(global_info)
+            return data
 
     async def _async_get_decision_data(self) -> DeviceDecision | None:
         """Fetch `/v1/decision`, tolerating failure the same way boost does.
@@ -213,17 +240,62 @@ class Healthbox3DataUpdateCoordinator(DataUpdateCoordinator[Healthbox3Data]):
             _LOGGER.debug("Failed to fetch room decision data: %s", err)
             return {}
 
-    async def _async_get_firmware_version_data(self) -> str | None:
-        """Fetch `/renson_core/v2/global`'s firmware version - same
-        gating/tolerance as decision/breeze/room_decisions.
+    async def _async_get_global_info_data(self) -> GlobalInfo | None:
+        """Fetch `/renson_core/v2/global` once per poll - same gating and
+        tolerance as decision/breeze/room_decisions. One request supplies the
+        firmware version, MAC, IP and interface type.
         """
         if not self.use_v2:
             return None
         try:
-            return await self.client.async_get_firmware_version()
+            return await self.client.async_get_global_info()
         except Healthbox3Error as err:
-            _LOGGER.debug("Failed to fetch firmware version: %s", err)
+            _LOGGER.debug("Failed to fetch global info: %s", err)
             return None
+
+    async def _async_get_wifi_data(self, global_info: GlobalInfo | None) -> WifiStatus | None:
+        """Fetch Wi-Fi status for a Wi-Fi unit, at most once per cache TTL.
+
+        A failed read is cached too, so a struggling device is not asked again
+        on every poll; the internet sensor reads unknown until the next try.
+        """
+        if not self.use_v2 or global_info is None or global_info.interface_type != "WIFI":
+            return None
+        now = dt_util.utcnow()
+        if self._wifi_cached_at is not None and now - self._wifi_cached_at < WIFI_STATUS_CACHE_TTL:
+            return self._wifi_cache
+        try:
+            self._wifi_cache = await self.client.async_get_wifi_status()
+        except Healthbox3Error as err:
+            _LOGGER.debug("Failed to fetch Wi-Fi status: %s", err)
+            self._wifi_cache = None
+        self._wifi_cached_at = now
+        return self._wifi_cache
+
+    def _async_sync_unit_device(self, global_info: GlobalInfo | None) -> None:
+        """Keep the unit device's MAC and address current with the device.
+
+        The device's IP can change when the router hands it a new lease, and
+        the device entry should follow it rather than keep the value from
+        first setup.
+        """
+        if self.unit_device_id is None or global_info is None:
+            return
+        device_registry = dr.async_get(self.hass)
+        device = device_registry.async_get(self.unit_device_id)
+        if not isinstance(device, dr.DeviceEntry):
+            return
+        connections = unit_connections(global_info)
+        configuration_url = unit_configuration_url(global_info)
+        if (
+            device.connections != connections
+            or device.configuration_url != configuration_url
+        ):
+            device_registry.async_update_device(
+                self.unit_device_id,
+                new_connections=connections,
+                configuration_url=configuration_url,
+            )
 
     async def _async_get_errors_data(self) -> list[DeviceError]:
         """Fetch `/v1/error` - same gating/tolerance as room_decisions (a

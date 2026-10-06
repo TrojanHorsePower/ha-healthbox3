@@ -42,6 +42,9 @@ def _patch_client():
         autospec=True,
     ) as mock_cls:
         mock_cls.return_value.async_discover = AsyncMock(return_value=None)
+        mock_cls.return_value.async_get_global_info = AsyncMock(
+            return_value=api_mod.GlobalInfo(firmware_version="2.6.9")
+        )
         yield mock_cls
 
 

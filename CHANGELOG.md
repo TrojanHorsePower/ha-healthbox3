@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Network diagnostics for the unit: a `Connection type` sensor (Wi-Fi or
+  Ethernet), a `Wi-Fi network` sensor (disabled by default, since it shows
+  your network name), and an `Internet access` sensor on Wi-Fi units. The
+  unit's MAC address and web-UI address are shown on its device entry. The
+  Wi-Fi status is read at most every 5 minutes.
 - A `Boost end time` sensor per room: when the running boost will finish,
   shown as a countdown. It reads unknown while no boost runs.
 

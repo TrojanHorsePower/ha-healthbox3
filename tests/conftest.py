@@ -170,6 +170,24 @@ def firmware_version(renson_core_global_raw) -> str:
 
 
 @pytest.fixture
+def global_info(renson_core_global_raw) -> api_mod.GlobalInfo:
+    """Parsed GlobalInfo from the real renson_core/v2/global fixture."""
+    return api_mod._parse_global_info(renson_core_global_raw)
+
+
+@pytest.fixture
+def wifi_status_raw() -> dict:
+    """Raw JSON from a real device's /renson_core/v1/wifi/client/status."""
+    return _load_fixture("wifi-client-status.json")
+
+
+@pytest.fixture
+def wifi_status(wifi_status_raw) -> api_mod.WifiStatus:
+    """Parsed WifiStatus from the real Wi-Fi status fixture."""
+    return api_mod._parse_wifi_status(wifi_status_raw)
+
+
+@pytest.fixture
 def errors_raw() -> list[dict]:
     """Hand-built /v1/error JSON, generic values.
 
@@ -212,6 +230,11 @@ def mock_api_client():
     ) as mock_cls:
         client = mock_cls.return_value
         client.async_get_room_decisions = AsyncMock(return_value={})
+        # A real GlobalInfo, not the unconfigured mock, so entry setup can store
+        # it and HA's registries can serialize the unit device.
+        client.async_get_global_info = AsyncMock(
+            return_value=api_mod.GlobalInfo(firmware_version="2.6.9")
+        )
         yield client
 
 
@@ -239,6 +262,8 @@ async def setup_integration(
     breeze: api_mod.BreezeSettings | None = None,
     room_decisions: dict[int, api_mod.RoomDecision] | None = None,
     firmware_version: str | None = None,
+    global_info: api_mod.GlobalInfo | None = None,
+    wifi_status: api_mod.WifiStatus | None = None,
     errors: list[api_mod.DeviceError] | None = None,
 ) -> MockConfigEntry:
     """Create a config entry and run async_setup_entry against a mocked client.
@@ -276,10 +301,16 @@ async def setup_integration(
         mock_api_client.async_get_room_decisions = AsyncMock(
             return_value=room_decisions
         )
-    if firmware_version is not None:
-        mock_api_client.async_get_firmware_version = AsyncMock(
-            return_value=firmware_version
-        )
+    # Every setup gets a global info; a test that cares about network fields
+    # passes its own. The default is a unit with no reported network.
+    if global_info is None:
+        global_info = api_mod.GlobalInfo(firmware_version=firmware_version or "2.6.9")
+    mock_api_client.async_get_global_info = AsyncMock(return_value=global_info)
+    mock_api_client.async_get_firmware_version = AsyncMock(
+        return_value=global_info.firmware_version
+    )
+    if wifi_status is not None:
+        mock_api_client.async_get_wifi_status = AsyncMock(return_value=wifi_status)
     if errors is not None:
         mock_api_client.async_get_errors = AsyncMock(return_value=errors)
 

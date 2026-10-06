@@ -196,6 +196,12 @@ async def async_setup_entry(
         entities.append(Healthbox3FirmwareVersionSensor(coordinator, serial))
         entities.append(Healthbox3DeviceErrorsSensor(coordinator, serial))
 
+    global_info = coordinator.data.global_info
+    if global_info is not None and global_info.interface_type is not None:
+        entities.append(Healthbox3ConnectionTypeSensor(coordinator, serial))
+    if global_info is not None and global_info.interface_type == "WIFI":
+        entities.append(Healthbox3WifiNetworkSensor(coordinator, serial))
+
     async_add_entities(entities)
 
 
@@ -588,6 +594,68 @@ class Healthbox3GlobalVentilationLevelSensor(Healthbox3Entity, SensorEntity):
         """Return the current whole-house ventilation level."""
         decision = self.coordinator.data.decision
         return decision.global_ventilation_level if decision is not None else None
+
+
+class Healthbox3ConnectionTypeSensor(Healthbox3Entity, SensorEntity):
+    """How the unit is attached to the network: "WIFI" or "ETHERNET".
+
+    Diagnostic. Tells you which of the Wi-Fi sensors apply to this unit.
+    """
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "connection_type"
+
+    def __init__(
+        self, coordinator: Healthbox3DataUpdateCoordinator, serial: str
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, serial)
+        self._attr_unique_id = f"{serial}_connection_type"
+
+    @property
+    @override
+    def available(self) -> bool:
+        """Return whether the device reported how it is connected."""
+        return super().available and self.native_value is not None
+
+    @property
+    @override
+    def native_value(self) -> str | None:
+        """Return the interface type the device reports."""
+        global_info = self.coordinator.data.global_info
+        return global_info.interface_type if global_info is not None else None
+
+
+class Healthbox3WifiNetworkSensor(Healthbox3Entity, SensorEntity):
+    """The Wi-Fi network (SSID) the unit is connected to.
+
+    Diagnostic, and disabled by default: it names your network, so it is not
+    shown unless you turn it on.
+    """
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
+    _attr_translation_key = "wifi_network"
+
+    def __init__(
+        self, coordinator: Healthbox3DataUpdateCoordinator, serial: str
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, serial)
+        self._attr_unique_id = f"{serial}_wifi_network"
+
+    @property
+    @override
+    def available(self) -> bool:
+        """Return whether the device reported its Wi-Fi network."""
+        return super().available and self.native_value is not None
+
+    @property
+    @override
+    def native_value(self) -> str | None:
+        """Return the SSID, if the Wi-Fi status has one."""
+        wifi = self.coordinator.data.wifi
+        return wifi.ssid if wifi is not None else None
 
 
 class Healthbox3FirmwareVersionSensor(Healthbox3Entity, SensorEntity):

@@ -203,13 +203,13 @@ async def test_v1_only_polling_never_fetches_firmware_version(hass, v1_data, boo
 
 
 async def test_v2_polling_fetches_firmware_version(
-    hass, v2_data, boost_status, firmware_version
+    hass, v2_data, boost_status, global_info, firmware_version
 ):
     entry = make_config_entry(hass, serial=v2_data.serial)
     client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
     client.async_get_v2_data_current.return_value = v2_data
     client.async_get_boost.return_value = boost_status
-    client.async_get_firmware_version.return_value = firmware_version
+    client.async_get_global_info.return_value = global_info
 
     coordinator = Healthbox3DataUpdateCoordinator(hass, entry, client, use_v2=True)
     await coordinator.async_refresh()
@@ -224,7 +224,7 @@ async def test_firmware_version_fetch_failure_does_not_fail_whole_update(
     client = AsyncMock(spec=api_mod.Healthbox3ApiClient)
     client.async_get_v2_data_current.return_value = v2_data
     client.async_get_boost.return_value = boost_status
-    client.async_get_firmware_version.side_effect = api_mod.Healthbox3ConnectionError(
+    client.async_get_global_info.side_effect = api_mod.Healthbox3ConnectionError(
         "offline"
     )
 

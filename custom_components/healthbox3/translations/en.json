@@ -133,6 +133,12 @@
       },
       "device_errors": {
         "name": "Device errors"
+      },
+      "connection_type": {
+        "name": "Connection type"
+      },
+      "wifi_network": {
+        "name": "Wi-Fi network"
       }
     },
     "select": {
@@ -176,6 +182,11 @@
       },
       "silent_stop_time": {
         "name": "Silent stop time"
+      }
+    },
+    "binary_sensor": {
+      "internet_connection": {
+        "name": "Internet access"
       }
     }
   },

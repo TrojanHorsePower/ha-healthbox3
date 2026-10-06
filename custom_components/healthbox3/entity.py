@@ -8,7 +8,11 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-from .coordinator import Healthbox3DataUpdateCoordinator
+from .coordinator import (
+    Healthbox3DataUpdateCoordinator,
+    unit_configuration_url,
+    unit_connections,
+)
 
 
 @dataclass(frozen=True)
@@ -20,14 +24,23 @@ class RoomRef:
 
 
 def unit_device_info(coordinator: Healthbox3DataUpdateCoordinator, serial: str) -> DeviceInfo:
-    """Return the device entry for the unit as a whole."""
-    return DeviceInfo(
+    """Return the device entry for the unit as a whole.
+
+    The MAC and the device's web-UI address come from the global info, when
+    the device reported them. The coordinator keeps them current on each poll.
+    """
+    info = DeviceInfo(
         identifiers={(DOMAIN, serial)},
         manufacturer="Renson",
         model="Healthbox 3.0",
         name=coordinator.data.healthbox.description,
         serial_number=serial,
     )
+    global_info = coordinator.data.global_info
+    if global_info is not None:
+        info["connections"] = unit_connections(global_info)
+        info["configuration_url"] = unit_configuration_url(global_info)
+    return info
 
 
 def room_device_info(

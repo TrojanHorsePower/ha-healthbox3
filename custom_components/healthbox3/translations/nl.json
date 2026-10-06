@@ -133,6 +133,12 @@
       },
       "device_errors": {
         "name": "Apparaatfouten"
+      },
+      "connection_type": {
+        "name": "Verbindingstype"
+      },
+      "wifi_network": {
+        "name": "Wi-Fi-netwerk"
       }
     },
     "select": {
@@ -176,6 +182,11 @@
       },
       "silent_stop_time": {
         "name": "Silent-stoptijd"
+      }
+    },
+    "binary_sensor": {
+      "internet_connection": {
+        "name": "Internettoegang"
       }
     }
   },

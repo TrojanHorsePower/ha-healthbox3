@@ -13,6 +13,7 @@ from .coordinator import Healthbox3ConfigEntry, Healthbox3DataUpdateCoordinator
 from .entity import unit_device_info
 
 PLATFORMS = [
+    Platform.BINARY_SENSOR,
     Platform.FAN,
     Platform.NUMBER,
     Platform.SELECT,
