@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Fan sensors from the device's own readings: `Fan flow` (m³/h, enabled by
+  default), and diagnostic `Fan pressure`, `Fan speed`, `Fan voltage` and
+  `Fan power`. All behind an active API key.
 - A `Power` sensor (current draw in watts) and an `Energy` sensor (kWh, for the
   Energy dashboard), both behind an active API key. Energy is estimated from
   the periodic power readings and does not count gaps longer than 15 minutes.

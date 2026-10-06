@@ -145,6 +145,21 @@
       },
       "energy": {
         "name": "Energie"
+      },
+      "fan_flow": {
+        "name": "Ventilatordebiet"
+      },
+      "fan_pressure": {
+        "name": "Ventilatordruk"
+      },
+      "fan_rpm": {
+        "name": "Ventilatortoerental"
+      },
+      "fan_voltage": {
+        "name": "Ventilatorspanning"
+      },
+      "fan_power": {
+        "name": "Ventilatorvermogen"
       }
     },
     "select": {

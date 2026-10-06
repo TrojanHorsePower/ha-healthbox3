@@ -145,6 +145,21 @@
       },
       "energy": {
         "name": "Energy"
+      },
+      "fan_flow": {
+        "name": "Fan flow"
+      },
+      "fan_pressure": {
+        "name": "Fan pressure"
+      },
+      "fan_rpm": {
+        "name": "Fan speed"
+      },
+      "fan_voltage": {
+        "name": "Fan voltage"
+      },
+      "fan_power": {
+        "name": "Fan power"
       }
     },
     "select": {

@@ -18,10 +18,13 @@ from homeassistant.components.sensor import (
 from homeassistant.const import (
     PERCENTAGE,
     EntityCategory,
+    UnitOfElectricPotential,
     UnitOfEnergy,
     UnitOfPower,
+    UnitOfPressure,
     UnitOfRatio,
     UnitOfTemperature,
+    UnitOfVolumeFlowRate,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -205,6 +208,11 @@ async def async_setup_entry(
 
     if coordinator.use_v2:
         entities.append(Healthbox3PowerSensor(coordinator, serial))
+        entities.append(Healthbox3FanFlowSensor(coordinator, serial))
+        entities.append(Healthbox3FanPressureSensor(coordinator, serial))
+        entities.append(Healthbox3FanRpmSensor(coordinator, serial))
+        entities.append(Healthbox3FanVoltageSensor(coordinator, serial))
+        entities.append(Healthbox3FanPowerSensor(coordinator, serial))
         entities.append(Healthbox3EnergySensor(coordinator, serial))
         entities.append(Healthbox3GlobalVentilationLevelSensor(coordinator, serial))
         entities.append(Healthbox3FirmwareVersionSensor(coordinator, serial))
@@ -637,6 +645,85 @@ class Healthbox3PowerSensor(Healthbox3Entity, SensorEntity):
         """Return the current power draw in watts."""
         device = self.coordinator.data.device
         return device.power if device is not None else None
+
+
+class _Healthbox3DeviceReadingSensor(Healthbox3Entity, SensorEntity):
+    """A sensor that reads one number from the device's /v1/device telemetry."""
+
+    _field: str = ""
+
+    def __init__(
+        self, coordinator: Healthbox3DataUpdateCoordinator, serial: str
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, serial)
+        self._attr_unique_id = f"{serial}_{self._attr_translation_key}"
+
+    @property
+    @override
+    def available(self) -> bool:
+        """Return whether the device reported this reading."""
+        return super().available and self.native_value is not None
+
+    @property
+    @override
+    def native_value(self) -> float | None:
+        """Return the reading, or None when the device did not report it."""
+        device = self.coordinator.data.device
+        return getattr(device, self._field) if device is not None else None
+
+
+class Healthbox3FanFlowSensor(_Healthbox3DeviceReadingSensor):
+    """The fan's airflow through the unit, in m³/h."""
+
+    _field = "fan_flow"
+    _attr_device_class = SensorDeviceClass.VOLUME_FLOW_RATE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR
+    _attr_translation_key = "fan_flow"
+
+
+class Healthbox3FanPressureSensor(_Healthbox3DeviceReadingSensor):
+    """The fan's pressure reading, in pascals. Diagnostic."""
+
+    _field = "fan_pressure"
+    _attr_device_class = SensorDeviceClass.PRESSURE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfPressure.PA
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "fan_pressure"
+
+
+class Healthbox3FanRpmSensor(_Healthbox3DeviceReadingSensor):
+    """The fan's rotation speed, in revolutions per minute. Diagnostic."""
+
+    _field = "fan_rpm"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = "rpm"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "fan_rpm"
+
+
+class Healthbox3FanVoltageSensor(_Healthbox3DeviceReadingSensor):
+    """The fan's supply voltage. Diagnostic."""
+
+    _field = "fan_voltage"
+    _attr_device_class = SensorDeviceClass.VOLTAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfElectricPotential.VOLT
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "fan_voltage"
+
+
+class Healthbox3FanPowerSensor(_Healthbox3DeviceReadingSensor):
+    """The fan's own electrical draw in watts. Diagnostic."""
+
+    _field = "fan_power"
+    _attr_device_class = SensorDeviceClass.POWER
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfPower.WATT
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "fan_power"
 
 
 class Healthbox3EnergySensor(Healthbox3Entity, RestoreSensor):

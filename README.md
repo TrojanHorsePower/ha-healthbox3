@@ -215,6 +215,11 @@ v1-only functionality and prompted you to reauthenticate with a new key.
 | `sensor` | `Ventilation level` | Whole-house current ventilation level, as a percentage; not capped at 100% - requires an active API key |
 | `sensor` | `Firmware version` | The device's currently installed firmware version - diagnostic entity, requires an active API key |
 | `sensor` | `Power` | The unit's current electrical draw in watts - requires an active API key |
+| `sensor` | `Fan flow` | The fan's airflow through the unit, in m³/h - requires an active API key. Units are the device's own; not confirmed against Renson's documentation |
+| `sensor` | `Fan pressure` | The fan's pressure reading, in Pa - diagnostic, requires an active API key |
+| `sensor` | `Fan speed` | The fan's rotation speed, in rpm - diagnostic, requires an active API key |
+| `sensor` | `Fan voltage` | The fan's supply voltage, in V - diagnostic, requires an active API key |
+| `sensor` | `Fan power` | The fan's own electrical draw, in W - diagnostic, requires an active API key |
 | `sensor` | `Energy` | Electrical energy the unit has used, in kWh, integrated from `Power` for the Energy dashboard - requires an active API key. See Known limitations for what it does not count |
 | `sensor` | `Connection type` | How the unit is attached to the network: `WIFI` or `ETHERNET` - diagnostic entity, requires an active API key |
 | `sensor` | `Wi-Fi network` | The Wi-Fi network (SSID) the unit is connected to - diagnostic, **disabled by default** since it names your network; enable it in the entity settings. Only on Wi-Fi units, requires an active API key |

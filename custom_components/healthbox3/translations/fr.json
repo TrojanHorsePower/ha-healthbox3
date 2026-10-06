@@ -145,6 +145,21 @@
       },
       "energy": {
         "name": "Énergie"
+      },
+      "fan_flow": {
+        "name": "Débit du ventilateur"
+      },
+      "fan_pressure": {
+        "name": "Pression du ventilateur"
+      },
+      "fan_rpm": {
+        "name": "Vitesse du ventilateur"
+      },
+      "fan_voltage": {
+        "name": "Tension du ventilateur"
+      },
+      "fan_power": {
+        "name": "Puissance du ventilateur"
       }
     },
     "select": {

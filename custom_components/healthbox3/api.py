@@ -180,26 +180,46 @@ def _parse_wifi_status(raw: Any) -> WifiStatus:
 
 @dataclass
 class DeviceTelemetry:
-    """Parsed `/v1/device`: the unit's whole-device electrical power.
+    """Parsed `/v1/device`: whole-unit power, and the fan's own readings.
 
-    `power` is the unit's instantaneous electrical draw in watts. The device
+    `power` is the unit's instantaneous electrical draw in watts. The fan
+    fields come from the device's `fan` block: `flow` (m³/h), `pressure`
+    (Pa), `rpm`, `voltage` (V), and the fan's own `power` (W). Units are the
+    device's own, not confirmed against Renson's documentation. The device
     reports `c_mode_power` as well, which only means something during a
     calibration sweep, so it is deliberately not parsed.
     """
 
     power: float | None = None
+    fan_flow: float | None = None
+    fan_pressure: float | None = None
+    fan_rpm: float | None = None
+    fan_voltage: float | None = None
+    fan_power: float | None = None
+
+
+def _optional_finite_number(value: Any) -> float | None:
+    """Return a finite number, or None. Bools, strings and NaN/inf are absent."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    if not math.isfinite(value):
+        return None
+    return float(value)
 
 
 def _parse_device(raw: Any) -> DeviceTelemetry:
     if not isinstance(raw, dict):
         raise Healthbox3InvalidResponseError("Unexpected /v1/device response shape")
-    power = raw.get("power")
-    # A non-finite or non-numeric reading is absent, not a measurement.
-    if isinstance(power, bool) or not isinstance(power, (int, float)):
-        return DeviceTelemetry(power=None)
-    if not math.isfinite(power):
-        return DeviceTelemetry(power=None)
-    return DeviceTelemetry(power=float(power))
+    fan = raw.get("fan")
+    fan = fan if isinstance(fan, dict) else {}
+    return DeviceTelemetry(
+        power=_optional_finite_number(raw.get("power")),
+        fan_flow=_optional_finite_number(fan.get("flow")),
+        fan_pressure=_optional_finite_number(fan.get("pressure")),
+        fan_rpm=_optional_finite_number(fan.get("rpm")),
+        fan_voltage=_optional_finite_number(fan.get("voltage")),
+        fan_power=_optional_finite_number(fan.get("power")),
+    )
 
 
 @dataclass
