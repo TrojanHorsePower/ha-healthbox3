@@ -13,6 +13,7 @@ from homeassistant.exceptions import HomeAssistantError
 from pytest_homeassistant_custom_component.common import mock_restore_cache
 
 from custom_components.healthbox3 import api as api_mod
+from custom_components.healthbox3.const import BOOST_FALLBACK_LEVEL
 from custom_components.healthbox3.fan import (
     _level_to_percentage,
     _percentage_to_level,
@@ -141,7 +142,7 @@ async def test_boost_fan_seeded_from_device_defaults(hass, mock_api_client, v1_d
 
 
 async def test_boost_fan_reports_on_with_rescaled_percentage(hass, mock_api_client, v1_data):
-    active = _boost(True, default_level=105.0, default_timeout=900, remaining=300)
+    active = _boost(True, level=105.0, default_level=100.0, default_timeout=900, remaining=300)
     await setup_integration(
         hass,
         mock_api_client,
@@ -501,3 +502,84 @@ async def test_boost_all_fan_turn_on_raises_if_any_room_fails(
         await hass.services.async_call(
             "fan", "turn_on", {"entity_id": _ALL_ENTITY}, blocking=True
         )
+
+
+async def test_boost_fan_shows_running_level_not_staged_one(hass, mock_api_client, v1_data):
+    """A boost started outside HA (e.g. Renson's app) shows the level it runs at."""
+    started_elsewhere = _boost(True, level=200.0, default_level=100.0, remaining=600)
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v1_data.serial,
+        api_key=None,
+        healthbox_data=v1_data,
+        boost_status=started_elsewhere,
+    )
+
+    state = hass.states.get(_ROOM1_ENTITY)
+    assert state.state == "on"
+    assert state.attributes["percentage"] == 100
+    assert state.attributes["level"] == "200%"
+
+
+async def test_boost_fan_shows_staged_level_while_off(hass, mock_api_client, v1_data):
+    """While no boost runs there is no running level, so the staged one shows."""
+    idle = _boost(False, level=200.0, default_level=105.0)
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v1_data.serial,
+        api_key=None,
+        healthbox_data=v1_data,
+        boost_status=idle,
+    )
+
+    state = hass.states.get(_ROOM1_ENTITY)
+    assert state.state == "off"
+    assert state.attributes["percentage"] == 0
+    assert state.attributes["level"] == "105%"
+
+
+async def test_boost_all_fan_shows_shared_running_level(hass, mock_api_client, v1_data):
+    statuses = {room.id: _boost(True, level=200.0) for room in v1_data.rooms}
+
+    async def _get_boost(room_id: int) -> api_mod.BoostStatus:
+        return statuses[room_id]
+
+    mock_api_client.async_get_boost = AsyncMock(side_effect=_get_boost)
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v1_data.serial,
+        api_key=None,
+        healthbox_data=v1_data,
+    )
+
+    state = hass.states.get(_ALL_ENTITY)
+    assert state.state == "on"
+    assert state.attributes["percentage"] == 100
+    assert state.attributes["level"] == "200%"
+
+
+async def test_boost_all_fan_falls_back_to_staged_when_rooms_disagree(
+    hass, mock_api_client, v1_data
+):
+    room_ids = [room.id for room in v1_data.rooms]
+    statuses = {room_id: _boost(True, level=200.0) for room_id in room_ids}
+    statuses[room_ids[0]] = _boost(True, level=150.0)
+
+    async def _get_boost(room_id: int) -> api_mod.BoostStatus:
+        return statuses[room_id]
+
+    mock_api_client.async_get_boost = AsyncMock(side_effect=_get_boost)
+    await setup_integration(
+        hass,
+        mock_api_client,
+        serial=v1_data.serial,
+        api_key=None,
+        healthbox_data=v1_data,
+    )
+
+    state = hass.states.get(_ALL_ENTITY)
+    assert state.state == "on"
+    assert state.attributes["level"] == f"{BOOST_FALLBACK_LEVEL:.0f}%"

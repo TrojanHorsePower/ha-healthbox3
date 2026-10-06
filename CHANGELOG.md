@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A boost fan's percentage and `level` attribute now show the level a boost
+  is actually running at, including one started from Renson's app or the
+  device's web UI. Previously they showed the level the next start would use.
+  "Boost all" shows a running level only when every room is at the same level.
+
 ## [0.3.4] - 2026-10-03
 
 All changes in this release contributed by

@@ -174,6 +174,10 @@ class _Healthbox3BoostFan(Healthbox3Entity, RestoreEntity, FanEntity):
     def _remaining(self) -> int | None:
         return None
 
+    def _running_level(self) -> float | None:
+        """Return the level boost is running at now, or None if it isn't known."""
+        return None
+
     def _extra_available(self) -> bool:
         return True
 
@@ -181,6 +185,19 @@ class _Healthbox3BoostFan(Healthbox3Entity, RestoreEntity, FanEntity):
         raise NotImplementedError
 
     # --- shared behavior ---
+
+    def _displayed_level(self) -> float:
+        """Return the level to show: what's running while boost is on.
+
+        `self._params.level` is only what the next start will use. Boost can
+        be started from Renson's app or the device's web UI, where that level
+        differs, so while a boost runs the device's own running level wins.
+        """
+        if self._is_active():
+            running = self._running_level()
+            if running is not None:
+                return running
+        return self._params.level
 
     @property
     @override
@@ -200,7 +217,7 @@ class _Healthbox3BoostFan(Healthbox3Entity, RestoreEntity, FanEntity):
         """Return the boost level rescaled to 0-100, or 0 if boost is off."""
         if not self._is_active():
             return 0
-        return max(1, _level_to_percentage(self._params.level))
+        return max(1, _level_to_percentage(self._displayed_level()))
 
     @property
     @override
@@ -212,7 +229,7 @@ class _Healthbox3BoostFan(Healthbox3Entity, RestoreEntity, FanEntity):
     @override
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return the real (unscaled) boost level and, if known, remaining time."""
-        attrs: dict[str, Any] = {"level": f"{self._params.level:.0f}%"}
+        attrs: dict[str, Any] = {"level": f"{self._displayed_level():.0f}%"}
         remaining = self._remaining()
         if remaining is not None:
             attrs["remaining"] = remaining
@@ -348,6 +365,11 @@ class Healthbox3RoomBoostFan(_Healthbox3BoostFan):
         return status.remaining if status is not None else None
 
     @override
+    def _running_level(self) -> float | None:
+        status = self._boost_status()
+        return status.level if status is not None else None
+
+    @override
     def _extra_available(self) -> bool:
         return self._boost_status() is not None
 
@@ -379,6 +401,17 @@ class Healthbox3AllBoostFan(_Healthbox3BoostFan):
     @override
     def _is_active(self) -> bool:
         return _all_rooms_active(self.coordinator)
+
+    @override
+    def _running_level(self) -> float | None:
+        """Return the shared running level, but only if every room agrees.
+
+        This fan stands for every room at once, and rooms can be boosting at
+        different levels (one started here, another from Renson's app). With
+        no single honest number, return None and let the staged level show.
+        """
+        levels = {status.level for status in self.coordinator.data.boost.values()}
+        return levels.pop() if len(levels) == 1 else None
 
     @override
     def _extra_available(self) -> bool:

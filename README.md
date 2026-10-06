@@ -250,9 +250,13 @@ Home Assistant's fan platform hard-requires a plain 0-100% domain, so:
 - 0% = boost off (`enable: false`) - ventilation continues at the profile rate
 - 1-100% = boost on, linearly rescaled onto the device's real 10-200% range
 
-The real, unscaled level (e.g. `"150%"`) is always shown as a `level`
-attribute on the entity, so you can see what the device actually received
-even though the slider itself reads a clean 0-100.
+The real, unscaled level (e.g. `"150%"`) is shown as a `level` attribute on
+the entity, so you can see what the device actually received even though the
+slider itself reads a clean 0-100. While a boost is running, the slider and
+`level` reflect the level the device is running at, which matters when a
+boost was started from Renson's app or the device's web UI. While no boost
+runs, they show the level the next start will use. For "boost all", the
+running level is shown only when every room is running at the same level.
 
 **Duration is a preset picker**, not exact minutes: `5 min`, `10 min`,
 `15 min`, `20 min`, `30 min`, `45 min`, `1 hour`, `2 hours`, `4 hours` - a fixed list,
