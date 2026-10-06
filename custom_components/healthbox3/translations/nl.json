@@ -228,5 +228,15 @@
       "title": "Healthbox meldde een {severity}-storing",
       "description": "De Healthbox meldde een storing (code {code}): {description}\n\nGemeld om {time}. Dit kan niet vanuit Home Assistant worden gewist - gebruik de Renson-app of het apparaat zelf om dit te bevestigen of op te lossen. Raadpleeg de Renson-app of neem contact op met uw installateur voor gedetailleerde stappen. Deze melding verdwijnt automatisch zodra het apparaat ze niet meer rapporteert."
     }
+  },
+  "system_health": {
+    "info": {
+      "can_reach_device": "Apparaat bereikbaar",
+      "firmware_version": "Firmwareversie",
+      "api_key_active": "API-sleutel actief",
+      "poll_interval_seconds": "Ophaalinterval (seconden)",
+      "last_poll_successful": "Laatste ophaling geslaagd",
+      "rooms": "Ruimtes"
+    }
   }
 }

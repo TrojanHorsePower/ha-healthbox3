@@ -445,6 +445,15 @@ connection failures still make affected entities unavailable.
 
 ## Troubleshooting
 
+**Settings > System > Repairs > System information** (the *Healthbox 3*
+entry) shows the unit's state at a glance: whether Home Assistant can reach
+it, its firmware version, whether the API key is active, the poll interval,
+whether the last poll succeeded, and the number of rooms. With more than one
+unit, each row lists the values in the order the units were set up. The page
+deliberately omits the IP address, MAC address, and serial number, so it is
+safe to paste into a forum post. Diagnostics (the download on the device
+page) includes more, and redacts the same identifiers.
+
 **Setup fails with "Failed to connect to the device."** Confirm the IP is
 reachable from Home Assistant (not just from your phone/laptop - a VLAN or
 firewall rule can block one but not the other), and that nothing else

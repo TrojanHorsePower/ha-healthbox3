@@ -228,5 +228,15 @@
       "title": "La Healthbox a signalé une panne {severity}",
       "description": "La Healthbox a signalé une panne (code {code}) : {description}\n\nSignalée à {time}. Cela ne peut pas être effacé depuis Home Assistant - utilisez l'application Renson ou l'appareil lui-même pour la reconnaître ou la résoudre. Consultez l'application Renson ou contactez votre installateur pour les étapes de dépannage détaillées. Cette alerte disparaît automatiquement dès que l'appareil ne la signale plus."
     }
+  },
+  "system_health": {
+    "info": {
+      "can_reach_device": "Appareil joignable",
+      "firmware_version": "Version du micrologiciel",
+      "api_key_active": "Clé API active",
+      "poll_interval_seconds": "Intervalle de mise à jour (secondes)",
+      "last_poll_successful": "Dernière mise à jour réussie",
+      "rooms": "Pièces"
+    }
   }
 }

@@ -3,6 +3,7 @@
   "name": "Renson Healthbox 3",
   "codeowners": ["@TrojanHorsePower"],
   "config_flow": true,
+  "dependencies": ["system_health"],
   "dhcp": [{ "hostname": "healthbox3*" }],
   "documentation": "https://github.com/TrojanHorsePower/ha-healthbox3",
   "integration_type": "hub",

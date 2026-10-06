@@ -228,5 +228,15 @@
       "title": "Healthbox reported a {severity} fault",
       "description": "The Healthbox reported a fault (code {code}): {description}\n\nReported at {time}. This can't be cleared from Home Assistant - use the Renson app or the device itself to acknowledge or resolve it. Check the Renson app or contact your installer for detailed troubleshooting steps. This issue will disappear automatically once the device stops reporting it."
     }
+  },
+  "system_health": {
+    "info": {
+      "can_reach_device": "Can reach device",
+      "firmware_version": "Firmware version",
+      "api_key_active": "API key active",
+      "poll_interval_seconds": "Poll interval (seconds)",
+      "last_poll_successful": "Last poll successful",
+      "rooms": "Rooms"
+    }
   }
 }

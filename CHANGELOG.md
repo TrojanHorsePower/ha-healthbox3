@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A system information page for the integration (Settings > System >
+  Repairs > System information). It shows whether the unit answers, its
+  firmware version, the API key state, poll interval, last poll result and
+  room count, without the IP address, MAC address or serial number.
 - Fan sensors from the device's own readings: `Fan flow` (m³/h, enabled by
   default), and diagnostic `Fan pressure`, `Fan speed`, `Fan voltage` and
   `Fan power`. All behind an active API key.
