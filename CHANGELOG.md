@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Requires Home Assistant 2026.10.0 or newer. Home Assistant replaced its
+  `voluptuous` validation library with `probatio`, and the integration's forms
+  now use it directly. Home Assistant 2026.9 and older stay on 0.4.0, which
+  keeps working there.
+
 ## [0.4.0] - 2026-10-06
 
 ### Changed

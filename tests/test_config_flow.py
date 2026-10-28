@@ -16,7 +16,7 @@ from homeassistant.config_entries import (
     SOURCE_USER,
 )
 from homeassistant.const import CONF_API_KEY, CONF_HOST
-from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.data_entry_flow import FlowResultType, InvalidData
 from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 
 from custom_components.healthbox3 import api as api_mod
@@ -1015,3 +1015,21 @@ async def test_activation_wait_is_bounded():
         }
         client.async_activate_api_key.assert_awaited_once_with("key")
         assert client.async_get_api_key_status.await_count == 6
+
+
+async def test_user_form_rejects_invalid_input_as_a_validation_error(
+    hass, mock_discover_broadcast
+):
+    """Invalid form input is reported through Home Assistant's own InvalidData.
+
+    Covers the form-validation path of the config flow, which had no test: an
+    empty submission must be rejected by the schema, not accepted or crashed on.
+    """
+    mock_discover_broadcast.return_value = []
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_USER}
+    )
+    assert result["type"] is FlowResultType.FORM
+
+    with pytest.raises(InvalidData):
+        await hass.config_entries.flow.async_configure(result["flow_id"], {})

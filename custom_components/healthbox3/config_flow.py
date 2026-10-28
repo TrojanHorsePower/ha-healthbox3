@@ -7,7 +7,7 @@ from collections.abc import Mapping
 import logging
 from typing import Any, override
 
-import voluptuous as vol
+import probatio
 
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_API_KEY, CONF_HOST
@@ -29,7 +29,7 @@ _LOGGER = logging.getLogger(__name__)
 _KEY_STATUS_RETRY_DELAY = 2.0
 _KEY_STATUS_ATTEMPTS = 6
 
-_MANUAL_HOST_SCHEMA = vol.Schema({vol.Required(CONF_HOST): str})
+_MANUAL_HOST_SCHEMA = probatio.Schema({probatio.Required(CONF_HOST): str})
 
 
 class Healthbox3ConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -145,7 +145,7 @@ class Healthbox3ConfigFlow(ConfigFlow, domain=DOMAIN):
         }
         return self.async_show_form(
             step_id="discovery_select",
-            data_schema=vol.Schema({vol.Required(CONF_HOST): vol.In(options)}),
+            data_schema=probatio.Schema({probatio.Required(CONF_HOST): probatio.In(options)}),
             errors=errors,
         )
 
@@ -293,7 +293,7 @@ class Healthbox3ConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="api_key",
-            data_schema=vol.Schema({vol.Optional(CONF_API_KEY): str}),
+            data_schema=probatio.Schema({probatio.Optional(CONF_API_KEY): str}),
             errors=errors,
             description_placeholders={"serial": self._serial},
         )
@@ -341,12 +341,12 @@ class Healthbox3ConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="reconfigure",
-            data_schema=vol.Schema(
+            data_schema=probatio.Schema(
                 {
-                    vol.Required(
+                    probatio.Required(
                         CONF_HOST, default=reconfigure_entry.data[CONF_HOST]
                     ): str,
-                    vol.Optional(CONF_API_KEY): str,
+                    probatio.Optional(CONF_API_KEY): str,
                 }
             ),
             errors=errors,
@@ -378,6 +378,6 @@ class Healthbox3ConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="reauth_confirm",
-            data_schema=vol.Schema({vol.Required(CONF_API_KEY): str}),
+            data_schema=probatio.Schema({probatio.Required(CONF_API_KEY): str}),
             errors=errors,
         )
