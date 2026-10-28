@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now use it directly. Home Assistant 2026.9 and older stay on 0.4.0, which
   keeps working there.
 
+### Fixed
+
+- The Dutch and French titles of the device fault repair issue no longer
+  trigger a placeholder error in the Home Assistant log. Dutch fixed by
+  [@bartlibert](https://github.com/bartlibert) in
+  [#2](https://github.com/TrojanHorsePower/ha-healthbox3/pull/2).
+
 ## [0.4.0] - 2026-10-06
 
 ### Changed
