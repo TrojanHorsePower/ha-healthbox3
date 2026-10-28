@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import re
 from typing import Any
 
 _HEALTHBOX3_DIR = Path(__file__).parent.parent / "custom_components" / "healthbox3"
@@ -71,3 +72,38 @@ def test_translations_fr_matches_en_key_structure():
     assert _key_shape(_load_json(TRANSLATIONS_FR_PATH)) == _key_shape(
         _load_json(TRANSLATIONS_EN_PATH)
     )
+
+
+def _placeholders_by_path(data: Any, path: str = "") -> dict[str, set[str]]:
+    """Map every leaf string's key path to the {placeholders} it contains."""
+    if isinstance(data, dict):
+        found: dict[str, set[str]] = {}
+        for key, value in data.items():
+            found.update(_placeholders_by_path(value, f"{path}/{key}"))
+        return found
+    if isinstance(data, str):
+        return {path: set(re.findall(r"\{(\w+)\}", data))}
+    return {}
+
+
+def _placeholder_mismatches(translated_path: Path) -> list[str]:
+    english = _placeholders_by_path(_load_json(TRANSLATIONS_EN_PATH))
+    translated = _placeholders_by_path(_load_json(translated_path))
+    return [
+        f"{path}: english {sorted(names)} != {sorted(translated.get(path, set()))}"
+        for path, names in english.items()
+        if names != translated.get(path, set())
+    ]
+
+
+def test_translations_nl_use_the_same_placeholders_as_en():
+    """Home Assistant rejects a translation whose {placeholders} differ from the
+    English text's, and logs an error at runtime. The key-structure checks
+    above cannot see this, since they ignore the text itself.
+    """
+    assert _placeholder_mismatches(TRANSLATIONS_NL_PATH) == []
+
+
+def test_translations_fr_use_the_same_placeholders_as_en():
+    """Same placeholder check as Dutch."""
+    assert _placeholder_mismatches(TRANSLATIONS_FR_PATH) == []
